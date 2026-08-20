@@ -1,0 +1,30 @@
+# Bracho on Render
+services:
+  - type: web
+    name: bracho
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npm run start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "20.18.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bracho-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: DIRECTOR_EMAIL
+        value: director@bracho.local
+      - key: DIRECTOR_PASSWORD
+        sync: false
+
+databases:
+  - name: bracho-db
+    plan: free
+    region: frankfurt
+    databaseName: bracho
+    user: bracho
