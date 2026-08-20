@@ -2,7 +2,8 @@
 
 Monorepo layout:
 
-- `admin/` — director admin panel (Next.js site on Render)
-- `program/` — desktop/operator program (to be built)
+- `admin/` — director admin panel (Next.js on Render)
+- `program/` — operator Electron app (Golden Bride chat login)
 
-Site URL: https://bracho.onrender.com
+Site: https://bracho.onrender.com  
+Program: run `program/START.bat`

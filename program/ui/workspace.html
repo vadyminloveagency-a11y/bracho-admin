@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bracho workspace</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #12110f; color: #f3efe6; font-family: "Segoe UI", Georgia, serif; }
+    .bar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid #2e2b26;
+      background: linear-gradient(90deg, #1c1a17, #241c16);
+    }
+    .title { font-size: 15px; }
+    .title span { color: #9a9286; margin-left: 8px; font-size: 13px; }
+    button {
+      border: 1px solid #2e2b26;
+      background: transparent;
+      color: #f3efe6;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <div class="title" id="title">Bracho</div>
+    <button type="button" id="back">Сменить анкету</button>
+  </div>
+  <script>
+    const q = new URLSearchParams(location.search);
+    document.getElementById("title").innerHTML =
+      (q.get("name") || "Anketa") +
+      '<span>ID ' + (q.get("id") || "") + " · Golden Bride</span>";
+    document.getElementById("back").onclick = () => window.brachoBar.back();
+  </script>
+</body>
+</html>

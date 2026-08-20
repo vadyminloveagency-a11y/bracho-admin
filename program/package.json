@@ -1,0 +1,14 @@
+{
+  "name": "bracho-program",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bracho operator program — Golden Bride chat login via assigned ankety",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^37.2.0"
+  }
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bracho</title>
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="brand">Bracho</p>
+      <p class="sub" id="subtitle">Вход оператора</p>
+    </header>
+
+    <section id="view-login" class="card">
+      <label>Email
+        <input id="email" type="email" autocomplete="username" placeholder="operator@agency.com" />
+      </label>
+      <label>Пароль
+        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+      </label>
+      <button id="btn-login" type="button">Войти</button>
+      <p class="hint">API: <span id="api-base"></span></p>
+      <p class="error" id="login-error" hidden></p>
+    </section>
+
+    <section id="view-ankety" class="card" hidden>
+      <p class="who" id="who"></p>
+      <p class="pick">Выберите анкету</p>
+      <div id="ankety-list" class="list"></div>
+      <button id="btn-logout" type="button" class="ghost">Выйти</button>
+      <p class="error" id="ankety-error" hidden></p>
+    </section>
+  </main>
+  <script src="auth.js"></script>
+</body>
+</html>

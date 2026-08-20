@@ -40,10 +40,7 @@ export async function createSessionToken(user: SessionUser) {
     .sign(secretKey());
 }
 
-export async function readSession(): Promise<SessionUser | null> {
-  const jar = await cookies();
-  const token = jar.get(COOKIE)?.value;
-  if (!token) return null;
+export async function verifyToken(token: string): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey());
     return {
@@ -55,6 +52,18 @@ export async function readSession(): Promise<SessionUser | null> {
   } catch {
     return null;
   }
+}
+
+export async function readSession(
+  authHeader?: string | null,
+): Promise<SessionUser | null> {
+  if (authHeader?.startsWith("Bearer ")) {
+    return verifyToken(authHeader.slice(7).trim());
+  }
+  const jar = await cookies();
+  const token = jar.get(COOKIE)?.value;
+  if (!token) return null;
+  return verifyToken(token);
 }
 
 export async function setSessionCookie(token: string) {
@@ -75,6 +84,12 @@ export async function clearSessionCookie() {
 
 export function requireDirector(user: SessionUser | null) {
   if (!user || user.role !== "DIRECTOR") {
+    throw new Error("FORBIDDEN");
+  }
+}
+
+export function requireOperator(user: SessionUser | null) {
+  if (!user || user.role !== "OPERATOR") {
     throw new Error("FORBIDDEN");
   }
 }
