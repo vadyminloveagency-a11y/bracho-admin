@@ -1,10 +1,11 @@
-# Bracho on Render
+# Bracho on Render (admin app lives in /admin)
 services:
   - type: web
     name: bracho
     runtime: node
     plan: free
     region: frankfurt
+    rootDir: admin
     buildCommand: npm ci && npx prisma generate && npm run build
     startCommand: npx prisma db push && npm run start
     healthCheckPath: /login
