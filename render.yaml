@@ -1,4 +1,4 @@
-# Bracho on Render — web only (no new Render Postgres; free tier already used)
+# Bracho on Render
 services:
   - type: web
     name: bracho
@@ -12,10 +12,19 @@ services:
       - key: NODE_VERSION
         value: "20.18.0"
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: bracho-db
+          property: connectionString
       - key: AUTH_SECRET
         generateValue: true
       - key: DIRECTOR_EMAIL
         value: director@bracho.local
       - key: DIRECTOR_PASSWORD
         sync: false
+
+databases:
+  - name: bracho-db
+    plan: basic_256mb
+    region: frankfurt
+    databaseName: bracho
+    user: bracho
