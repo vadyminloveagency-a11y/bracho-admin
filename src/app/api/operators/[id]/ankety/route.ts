@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { readSession, requireDirector } from "@/lib/auth";
+import { encryptSecret } from "@/lib/secret";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 const createSchema = z.object({
   externalId: z.string().min(1).max(64),
   displayName: z.string().min(1).max(120),
+  password: z.string().min(1).max(200),
   site: z.string().min(1).max(64).optional(),
   notes: z.string().max(500).optional(),
 });
@@ -32,8 +34,17 @@ export async function POST(req: NextRequest, ctx: Ctx) {
         operatorId,
         externalId: parsed.externalId.trim(),
         displayName: parsed.displayName.trim(),
+        passwordEnc: encryptSecret(parsed.password),
         site: parsed.site || "goldenbride",
         notes: parsed.notes?.trim() || null,
+      },
+      select: {
+        id: true,
+        externalId: true,
+        displayName: true,
+        site: true,
+        notes: true,
+        createdAt: true,
       },
     });
 

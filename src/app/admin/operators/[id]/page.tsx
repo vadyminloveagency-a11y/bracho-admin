@@ -24,8 +24,8 @@ export default function OperatorDetailPage() {
   const params = useParams<{ id: string }>();
   const [operator, setOperator] = useState<Operator | null>(null);
   const [externalId, setExternalId] = useState("");
+  const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
 
   async function load() {
@@ -46,8 +46,8 @@ export default function OperatorDetailPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         externalId,
+        password,
         displayName,
-        notes: notes || undefined,
         site: "goldenbride",
       }),
     });
@@ -57,8 +57,8 @@ export default function OperatorDetailPage() {
       return;
     }
     setExternalId("");
+    setPassword("");
     setDisplayName("");
-    setNotes("");
     await load();
   }
 
@@ -88,7 +88,7 @@ export default function OperatorDetailPage() {
       </h1>
       <p style={{ margin: "0 0 24px", color: "var(--muted)" }}>{operator.email}</p>
 
-      <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>Bind anketa</h2>
+      <h2 style={{ fontSize: 18, margin: "0 0 12px" }}>Привязать анкету (Golden)</h2>
       <form
         onSubmit={onBind}
         style={{
@@ -102,23 +102,27 @@ export default function OperatorDetailPage() {
         }}
       >
         <input
-          placeholder="External ID (e.g. 1416930)"
+          placeholder="ID (логин на Golden)"
           value={externalId}
           onChange={(e) => setExternalId(e.target.value)}
           required
+          autoComplete="off"
           style={field}
         />
         <input
-          placeholder="Display name (Valentina)"
+          placeholder="Пароль анкеты"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          type="password"
+          autoComplete="new-password"
+          style={field}
+        />
+        <input
+          placeholder="Имя анкеты (Valentina)"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           required
-          style={field}
-        />
-        <input
-          placeholder="Notes (optional)"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
           style={field}
         />
         <button
@@ -137,7 +141,7 @@ export default function OperatorDetailPage() {
       </form>
       {error ? <p style={{ color: "#ff8a80" }}>{error}</p> : null}
 
-      <h2 style={{ fontSize: 18, margin: "24px 0 12px" }}>Bound ankety</h2>
+      <h2 style={{ fontSize: 18, margin: "24px 0 12px" }}>Привязанные анкеты</h2>
       <div style={{ display: "grid", gap: 8 }}>
         {operator.ankety.map((a) => (
           <div
@@ -159,8 +163,7 @@ export default function OperatorDetailPage() {
                 </span>
               </div>
               <div style={{ color: "var(--muted)", fontSize: 13 }}>
-                {a.site}
-                {a.notes ? ` · ${a.notes}` : ""}
+                {a.site} · пароль сохранён
               </div>
             </div>
             <button
@@ -179,7 +182,7 @@ export default function OperatorDetailPage() {
           </div>
         ))}
         {!operator.ankety.length ? (
-          <p style={{ color: "var(--muted)" }}>No ankety bound yet.</p>
+          <p style={{ color: "var(--muted)" }}>Пока нет привязанных анкет.</p>
         ) : null}
       </div>
     </section>

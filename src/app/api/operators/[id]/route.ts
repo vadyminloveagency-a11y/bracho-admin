@@ -19,7 +19,17 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
         name: true,
         active: true,
         createdAt: true,
-        ankety: { orderBy: { createdAt: "desc" } },
+        ankety: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            externalId: true,
+            displayName: true,
+            site: true,
+            notes: true,
+            createdAt: true,
+          },
+        },
       },
     });
 

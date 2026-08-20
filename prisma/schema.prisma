@@ -27,8 +27,12 @@ model User {
 
 model Anketa {
   id          String   @id @default(cuid())
+  /// Golden Bride login (profile ID)
   externalId  String
+  /// Shown name in admin (e.g. Valentina)
   displayName String
+  /// Encrypted Golden Bride password for this anketa
+  passwordEnc String @default("")
   site        String   @default("goldenbride")
   notes       String?
   createdAt   DateTime @default(now())
