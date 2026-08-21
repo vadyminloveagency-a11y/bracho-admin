@@ -22,6 +22,12 @@ services:
         value: director@bracho.local
       - key: DIRECTOR_PASSWORD
         sync: false
+      # Optional: agency Golden login for fast avatar sync (getLadies).
+      # Without these, Bracho logs in as each lady and calls getLady.
+      - key: GOLDEN_AGENCY_LOGIN
+        sync: false
+      - key: GOLDEN_AGENCY_PASSWORD
+        sync: false
 
 databases:
   - name: bracho-db

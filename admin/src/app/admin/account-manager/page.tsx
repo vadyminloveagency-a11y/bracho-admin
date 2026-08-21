@@ -13,6 +13,7 @@ type Account = {
   id: string;
   externalId: string;
   displayName: string;
+  avatarUrl?: string | null;
   site: string;
   notes: string | null;
 };
@@ -30,6 +31,7 @@ type OnlineRow = {
   operatorId: string;
   externalId: string;
   displayName: string;
+  avatarUrl?: string | null;
   lastSeenAt: string;
   operator: { id: string; name: string; email: string };
 };
@@ -74,12 +76,33 @@ function PowerIcon() {
   );
 }
 
-function Avatar({ name, online }: { name: string; online?: boolean }) {
+function Avatar({
+  name,
+  src,
+  online,
+}: {
+  name: string;
+  src?: string | null;
+  online?: boolean;
+}) {
+  const [broken, setBroken] = useState(false);
+  const showImg = Boolean(src) && !broken;
   return (
     <span className="am-avatar-wrap">
-      <span className="account-avatar placeholder" aria-hidden="true">
-        {initials(name)}
-      </span>
+      {showImg ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          className="account-avatar"
+          src={src!}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={() => setBroken(true)}
+        />
+      ) : (
+        <span className="account-avatar placeholder" aria-hidden="true">
+          {initials(name)}
+        </span>
+      )}
       {online ? <span className="am-online-dot" /> : null}
     </span>
   );
@@ -101,6 +124,7 @@ export default function AccountManagerPage() {
   const [accName, setAccName] = useState("");
   const [accExternalId, setAccExternalId] = useState("");
   const [accPassword, setAccPassword] = useState("");
+  const [syncMsg, setSyncMsg] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/account-manager");
@@ -294,6 +318,29 @@ export default function AccountManagerPage() {
     }
   }
 
+  async function syncAvatars() {
+    setBusy(true);
+    setSyncMsg("Loading photos from Golden…");
+    setError("");
+    try {
+      const res = await fetch("/api/account-manager/sync-avatars", {
+        method: "POST",
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Avatar sync failed");
+        setSyncMsg("");
+        return;
+      }
+      setSyncMsg(
+        `Photos updated: ${json.updated}${json.failed ? `, failed: ${json.failed}` : ""}`,
+      );
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function onDragStart(id: string) {
     setDragId(id);
   }
@@ -332,10 +379,22 @@ export default function AccountManagerPage() {
             <h3>
               Accounts <span className="count">({data.stats.accounts})</span>
             </h3>
-            <button type="button" className="btn-primary" onClick={openCreateAccount}>
-              Add Account
-            </button>
+            <div className="am-col-actions">
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={busy}
+                onClick={syncAvatars}
+                title="Pull real photos from Golden Bride"
+              >
+                Sync photos
+              </button>
+              <button type="button" className="btn-primary" onClick={openCreateAccount}>
+                Add Account
+              </button>
+            </div>
           </div>
+          {syncMsg ? <p className="am-sync-msg">{syncMsg}</p> : null}
           <div className="am-col-body">
             {data.accounts.length === 0 ? (
               <p className="empty-state">
@@ -352,7 +411,11 @@ export default function AccountManagerPage() {
                   onDragStart={() => onDragStart(a.id)}
                   onDragEnd={onDragEnd}
                 >
-                  <Avatar name={a.displayName} online={onlineIds.has(a.id)} />
+                  <Avatar
+                    name={a.displayName}
+                    src={a.avatarUrl}
+                    online={onlineIds.has(a.id)}
+                  />
                   <div className="account-meta">
                     <p className="account-name">{a.displayName}</p>
                     <p className="account-sub">ID {a.externalId}</p>
@@ -433,6 +496,7 @@ export default function AccountManagerPage() {
                           >
                             <Avatar
                               name={a.displayName}
+                              src={a.avatarUrl}
                               online={onlineIds.has(a.id)}
                             />
                             <div className="account-meta">
@@ -475,7 +539,11 @@ export default function AccountManagerPage() {
               <div className="am-online-list">
                 {data.online.map((row) => (
                   <div key={row.anketaId} className="am-online-row">
-                    <Avatar name={row.displayName} online />
+                    <Avatar
+                      name={row.displayName}
+                      src={row.avatarUrl}
+                      online
+                    />
                     <div className="account-meta">
                       <p className="account-name">{row.displayName}</p>
                       <p className="account-sub">

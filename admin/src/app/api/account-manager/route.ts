@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { readSession, requireDirector } from "@/lib/auth";
 import { encryptSecret } from "@/lib/secret";
 import { ensureSchema } from "@/lib/ensure-schema";
+import { fetchLadyAvatarUrl } from "@/lib/golden-agency";
 
 const ONLINE_MS = 90_000;
 
@@ -31,6 +32,7 @@ export async function GET() {
           id: true,
           externalId: true,
           displayName: true,
+          avatarUrl: true,
           site: true,
           notes: true,
           createdAt: true,
@@ -51,6 +53,7 @@ export async function GET() {
               id: true,
               externalId: true,
               displayName: true,
+              avatarUrl: true,
               site: true,
               notes: true,
             },
@@ -67,16 +70,26 @@ export async function GET() {
           displayName: true,
           lastSeenAt: true,
           operator: { select: { id: true, name: true, email: true } },
+          anketa: { select: { avatarUrl: true } },
         },
       }),
     ]);
 
     const ladiesInWork = operators.reduce((n, op) => n + op.ankety.length, 0);
+    const onlineRows = online.map((row) => ({
+      anketaId: row.anketaId,
+      operatorId: row.operatorId,
+      externalId: row.externalId,
+      displayName: row.displayName,
+      lastSeenAt: row.lastSeenAt,
+      avatarUrl: row.anketa?.avatarUrl || null,
+      operator: row.operator,
+    }));
 
     return NextResponse.json({
       accounts,
       operators,
-      online,
+      online: onlineRows,
       stats: {
         accounts: accounts.length,
         operators: operators.length,
@@ -120,6 +133,7 @@ export async function POST(req: NextRequest) {
         id: true,
         externalId: true,
         displayName: true,
+        avatarUrl: true,
         site: true,
         notes: true,
         operatorId: true,
@@ -127,7 +141,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ anketa }, { status: 201 });
+    let avatarUrl: string | null = null;
+    try {
+      avatarUrl = await fetchLadyAvatarUrl(
+        parsed.externalId.trim(),
+        parsed.password,
+      );
+      await prisma.anketa.update({
+        where: { id: anketa.id },
+        data: { avatarUrl },
+      });
+    } catch {
+      // avatar can be synced later
+    }
+
+    return NextResponse.json(
+      { anketa: { ...anketa, avatarUrl } },
+      { status: 201 },
+    );
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed";
     if (message === "FORBIDDEN") {

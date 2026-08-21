@@ -83,4 +83,12 @@ export async function ensureSchema() {
   } catch {
     // ignore
   }
+
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "Anketa" ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT
+    `);
+  } catch {
+    // ignore
+  }
 }

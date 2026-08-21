@@ -35,6 +35,8 @@ model Anketa {
   displayName String
   /// Encrypted Golden Bride password for this anketa
   passwordEnc String  @default("")
+  /// Cached main photo URL from Golden (CloudFront)
+  avatarUrl   String?
   site        String   @default("goldenbride")
   notes       String?
   createdAt   DateTime @default(now())

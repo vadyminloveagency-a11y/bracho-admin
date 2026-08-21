@@ -234,6 +234,20 @@
   flex-shrink: 0;
 }
 
+.am-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.am-sync-msg {
+  margin: 0;
+  padding: 8px 14px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .am-col-head h3 {
   margin: 0;
   font: 600 15px/1.2 var(--font);
