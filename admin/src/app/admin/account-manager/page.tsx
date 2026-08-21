@@ -1,8 +1,8 @@
 "use client";
 
 import {
+  type DragEvent,
   type FormEvent,
-  type MouseEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -93,30 +93,34 @@ function Avatar({
   const [broken, setBroken] = useState(false);
   const showImg = Boolean(src) && !broken;
   const clickable = Boolean(onClick);
-  const Tag = clickable ? "button" : "span";
   return (
-    <Tag
-      type={clickable ? "button" : undefined}
+    <button
+      type="button"
       className={`am-avatar-wrap${clickable ? " is-clickable" : ""}${
         loading ? " is-loading" : ""
       }`}
-      title={clickable ? "Click to fetch photo from Golden" : undefined}
-      disabled={clickable ? loading : undefined}
-      onClick={
+      title={
         clickable
-          ? (e: MouseEvent) => {
-              e.stopPropagation();
-              onClick?.();
-            }
+          ? loading
+            ? "Fetching photo…"
+            : "Click to fetch / refresh photo from Golden"
           : undefined
       }
-      onMouseDown={
-        clickable
-          ? (e: MouseEvent) => {
-              e.stopPropagation();
-            }
-          : undefined
-      }
+      disabled={!clickable || loading}
+      draggable={false}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!clickable || loading) return;
+        onClick?.();
+      }}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
+      onDragStart={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
       {showImg ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -124,6 +128,7 @@ function Avatar({
           className="account-avatar"
           src={src!}
           alt=""
+          draggable={false}
           referrerPolicy="no-referrer"
           onError={() => setBroken(true)}
         />
@@ -133,7 +138,7 @@ function Avatar({
         </span>
       )}
       {online ? <span className="am-online-dot" /> : null}
-    </Tag>
+    </button>
   );
 }
 
@@ -155,6 +160,7 @@ export default function AccountManagerPage() {
   const [accExternalId, setAccExternalId] = useState("");
   const [accPassword, setAccPassword] = useState("");
   const [avatarBusyId, setAvatarBusyId] = useState<string | null>(null);
+  const [avatarMsg, setAvatarMsg] = useState("");
 
   const load = useCallback(async () => {
     const res = await fetch("/api/account-manager");
@@ -410,17 +416,24 @@ export default function AccountManagerPage() {
     if (avatarBusyId) return;
     setAvatarBusyId(anketaId);
     setError("");
+    setAvatarMsg("Fetching photo from Golden…");
     try {
       const res = await fetch(`/api/ankety/${anketaId}/avatar`, {
         method: "POST",
       });
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(json.error || "Could not fetch photo");
+        const msg = json.error || "Could not fetch photo";
+        setError(msg);
+        setAvatarMsg("");
         return;
       }
       const url = json.anketa?.avatarUrl as string | undefined;
-      if (!url) return;
+      if (!url) {
+        setError("Golden returned no photo URL");
+        setAvatarMsg("");
+        return;
+      }
       setData((prev) => {
         if (!prev) return prev;
         return {
@@ -439,6 +452,11 @@ export default function AccountManagerPage() {
           ),
         };
       });
+      setAvatarMsg("Photo updated");
+      window.setTimeout(() => setAvatarMsg(""), 2500);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not fetch photo");
+      setAvatarMsg("");
     } finally {
       setAvatarBusyId(null);
     }
@@ -446,6 +464,15 @@ export default function AccountManagerPage() {
 
   function onDragStart(id: string) {
     setDragId(id);
+  }
+
+  function beginCardDrag(e: DragEvent, id: string) {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest("button, a, input, textarea, select")) {
+      e.preventDefault();
+      return;
+    }
+    onDragStart(id);
   }
 
   function onDragEnd() {
@@ -464,6 +491,7 @@ export default function AccountManagerPage() {
   return (
     <section className="admin-section">
       {error && !modal ? <div className="status-error">{error}</div> : null}
+      {avatarMsg && !modal ? <div className="status-ok">{avatarMsg}</div> : null}
 
       <div className="am-board">
         <div
@@ -499,7 +527,7 @@ export default function AccountManagerPage() {
                     dragId === a.id ? " is-dragging" : ""
                   }`}
                   draggable
-                  onDragStart={() => onDragStart(a.id)}
+                  onDragStart={(e) => beginCardDrag(e, a.id)}
                   onDragEnd={onDragEnd}
                 >
                   <Avatar
@@ -517,6 +545,8 @@ export default function AccountManagerPage() {
                     type="button"
                     className="account-edit-btn"
                     title="Edit lady"
+                    draggable={false}
+                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
                       openEditAccount(a);
@@ -595,7 +625,7 @@ export default function AccountManagerPage() {
                               onlineIds.has(a.id) ? " is-online" : ""
                             }${dragId === a.id ? " is-dragging" : ""}`}
                             draggable
-                            onDragStart={() => onDragStart(a.id)}
+                            onDragStart={(e) => beginCardDrag(e, a.id)}
                             onDragEnd={onDragEnd}
                           >
                             <Avatar
@@ -613,6 +643,8 @@ export default function AccountManagerPage() {
                               type="button"
                               className="linked-edit"
                               title="Edit lady"
+                              draggable={false}
+                              onMouseDown={(e) => e.stopPropagation()}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 openEditAccount(a);
