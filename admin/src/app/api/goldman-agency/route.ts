@@ -34,9 +34,9 @@ function parseIdList(raw: unknown): string[] {
   return out;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const session = await readSession();
+    const session = await readSession(req.headers.get("authorization"));
     if (!session || (session.role !== "DIRECTOR" && session.role !== "OPERATOR")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -56,8 +56,10 @@ export async function GET() {
       items,
       ids: items.map((i) => i.externalId),
     });
-  } catch {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed";
+    console.error("[goldman-agency GET]", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
