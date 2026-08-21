@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
             externalId: true,
             displayName: true,
             site: true,
+            avatarUrl: true,
             passwordEnc: true,
           },
         },
@@ -45,6 +46,7 @@ export async function GET(req: NextRequest) {
         externalId: a.externalId,
         displayName: a.displayName,
         site: a.site,
+        avatarUrl: a.avatarUrl || null,
         password,
       };
     });

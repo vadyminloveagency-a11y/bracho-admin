@@ -234,20 +234,6 @@
   flex-shrink: 0;
 }
 
-.am-col-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.am-sync-msg {
-  margin: 0;
-  padding: 8px 14px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .am-col-head h3 {
   margin: 0;
   font: 600 15px/1.2 var(--font);
@@ -407,6 +393,32 @@
   display: inline-flex;
   flex: 0 0 auto;
   line-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: default;
+}
+
+.am-avatar-wrap.is-clickable {
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.am-avatar-wrap.is-clickable:hover .account-avatar,
+.am-avatar-wrap.is-clickable:focus-visible .account-avatar {
+  border-color: rgba(255, 43, 58, 0.75);
+  box-shadow: 0 0 0 2px rgba(255, 43, 58, 0.25);
+}
+
+.am-avatar-wrap.is-loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.am-avatar-wrap:disabled {
+  cursor: wait;
 }
 
 .am-online-dot {

@@ -2,6 +2,7 @@
 
 import {
   type FormEvent,
+  type MouseEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -80,15 +81,43 @@ function Avatar({
   name,
   src,
   online,
+  loading,
+  onClick,
 }: {
   name: string;
   src?: string | null;
   online?: boolean;
+  loading?: boolean;
+  onClick?: () => void;
 }) {
   const [broken, setBroken] = useState(false);
   const showImg = Boolean(src) && !broken;
+  const clickable = Boolean(onClick);
+  const Tag = clickable ? "button" : "span";
   return (
-    <span className="am-avatar-wrap">
+    <Tag
+      type={clickable ? "button" : undefined}
+      className={`am-avatar-wrap${clickable ? " is-clickable" : ""}${
+        loading ? " is-loading" : ""
+      }`}
+      title={clickable ? "Click to fetch photo from Golden" : undefined}
+      disabled={clickable ? loading : undefined}
+      onClick={
+        clickable
+          ? (e: MouseEvent) => {
+              e.stopPropagation();
+              onClick?.();
+            }
+          : undefined
+      }
+      onMouseDown={
+        clickable
+          ? (e: MouseEvent) => {
+              e.stopPropagation();
+            }
+          : undefined
+      }
+    >
       {showImg ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -100,11 +129,11 @@ function Avatar({
         />
       ) : (
         <span className="account-avatar placeholder" aria-hidden="true">
-          {initials(name)}
+          {loading ? "…" : initials(name)}
         </span>
       )}
       {online ? <span className="am-online-dot" /> : null}
-    </span>
+    </Tag>
   );
 }
 
@@ -125,7 +154,7 @@ export default function AccountManagerPage() {
   const [accName, setAccName] = useState("");
   const [accExternalId, setAccExternalId] = useState("");
   const [accPassword, setAccPassword] = useState("");
-  const [syncMsg, setSyncMsg] = useState("");
+  const [avatarBusyId, setAvatarBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/account-manager");
@@ -377,26 +406,41 @@ export default function AccountManagerPage() {
     }
   }
 
-  async function syncAvatars() {
-    setBusy(true);
-    setSyncMsg("Loading photos from Golden…");
+  async function refreshAvatar(anketaId: string) {
+    if (avatarBusyId) return;
+    setAvatarBusyId(anketaId);
     setError("");
     try {
-      const res = await fetch("/api/account-manager/sync-avatars", {
+      const res = await fetch(`/api/ankety/${anketaId}/avatar`, {
         method: "POST",
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || "Avatar sync failed");
-        setSyncMsg("");
+        setError(json.error || "Could not fetch photo");
         return;
       }
-      setSyncMsg(
-        `Photos updated: ${json.updated}${json.failed ? `, failed: ${json.failed}` : ""}`,
-      );
-      await load();
+      const url = json.anketa?.avatarUrl as string | undefined;
+      if (!url) return;
+      setData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          accounts: prev.accounts.map((a) =>
+            a.id === anketaId ? { ...a, avatarUrl: url } : a,
+          ),
+          operators: prev.operators.map((op) => ({
+            ...op,
+            ankety: op.ankety.map((a) =>
+              a.id === anketaId ? { ...a, avatarUrl: url } : a,
+            ),
+          })),
+          online: prev.online.map((row) =>
+            row.anketaId === anketaId ? { ...row, avatarUrl: url } : row,
+          ),
+        };
+      });
     } finally {
-      setBusy(false);
+      setAvatarBusyId(null);
     }
   }
 
@@ -438,22 +482,10 @@ export default function AccountManagerPage() {
             <h3>
               Accounts <span className="count">({data.stats.accounts})</span>
             </h3>
-            <div className="am-col-actions">
-              <button
-                type="button"
-                className="btn-ghost"
-                disabled={busy}
-                onClick={syncAvatars}
-                title="Pull real photos from Golden Bride"
-              >
-                Sync photos
-              </button>
-              <button type="button" className="btn-primary" onClick={openCreateAccount}>
-                Add Account
-              </button>
-            </div>
+            <button type="button" className="btn-primary" onClick={openCreateAccount}>
+              Add Account
+            </button>
           </div>
-          {syncMsg ? <p className="am-sync-msg">{syncMsg}</p> : null}
           <div className="am-col-body">
             {data.accounts.length === 0 ? (
               <p className="empty-state">
@@ -474,6 +506,8 @@ export default function AccountManagerPage() {
                     name={a.displayName}
                     src={a.avatarUrl}
                     online={onlineIds.has(a.id)}
+                    loading={avatarBusyId === a.id}
+                    onClick={() => refreshAvatar(a.id)}
                   />
                   <div className="account-meta">
                     <p className="account-name">{a.displayName}</p>
@@ -568,6 +602,8 @@ export default function AccountManagerPage() {
                               name={a.displayName}
                               src={a.avatarUrl}
                               online={onlineIds.has(a.id)}
+                              loading={avatarBusyId === a.id}
+                              onClick={() => refreshAvatar(a.id)}
                             />
                             <div className="account-meta">
                               <p className="account-name">{a.displayName}</p>
@@ -624,6 +660,8 @@ export default function AccountManagerPage() {
                       name={row.displayName}
                       src={row.avatarUrl}
                       online
+                      loading={avatarBusyId === row.anketaId}
+                      onClick={() => refreshAvatar(row.anketaId)}
                     />
                     <div className="account-meta">
                       <p className="account-name">{row.displayName}</p>
