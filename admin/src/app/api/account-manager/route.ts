@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     requireDirector(session);
 
     const parsed = createSchema.parse(await req.json());
-    let operatorId: string | null =
+    const operatorId: string | null =
       parsed.operatorId === undefined ? null : parsed.operatorId;
 
     if (operatorId) {

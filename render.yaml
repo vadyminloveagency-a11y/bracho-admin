@@ -7,7 +7,7 @@ services:
     region: frankfurt
     rootDir: admin
     buildCommand: npm ci && npx prisma generate && npm run build
-    startCommand: npx prisma db push && npm run start
+    startCommand: npm run start
     healthCheckPath: /login
     envVars:
       - key: NODE_VERSION
