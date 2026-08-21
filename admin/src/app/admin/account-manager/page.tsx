@@ -46,6 +46,8 @@ type Snapshot = {
   };
 };
 
+type ModalKind = "account" | "operator-create" | "operator-edit" | null;
+
 function initials(name: string) {
   const parts = String(name || "")
     .trim()
@@ -89,6 +91,8 @@ export default function AccountManagerPage() {
   const [busy, setBusy] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [modal, setModal] = useState<ModalKind>(null);
+  const [editOp, setEditOp] = useState<Operator | null>(null);
 
   const [opName, setOpName] = useState("");
   const [opEmail, setOpEmail] = useState("");
@@ -97,9 +101,6 @@ export default function AccountManagerPage() {
   const [accName, setAccName] = useState("");
   const [accExternalId, setAccExternalId] = useState("");
   const [accPassword, setAccPassword] = useState("");
-
-  const [showOpForm, setShowOpForm] = useState(false);
-  const [showAccForm, setShowAccForm] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/account-manager");
@@ -123,6 +124,39 @@ export default function AccountManagerPage() {
     [data],
   );
 
+  function closeModal() {
+    setModal(null);
+    setEditOp(null);
+    setOpName("");
+    setOpEmail("");
+    setOpPassword("");
+    setAccName("");
+    setAccExternalId("");
+    setAccPassword("");
+  }
+
+  function openCreateAccount() {
+    setAccName("");
+    setAccExternalId("");
+    setAccPassword("");
+    setModal("account");
+  }
+
+  function openCreateOperator() {
+    setOpName("");
+    setOpEmail("");
+    setOpPassword("");
+    setModal("operator-create");
+  }
+
+  function openEditOperator(op: Operator) {
+    setEditOp(op);
+    setOpName(op.name);
+    setOpEmail(op.email);
+    setOpPassword("");
+    setModal("operator-edit");
+  }
+
   async function createOperator(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -142,10 +176,57 @@ export default function AccountManagerPage() {
         setError(json.error || "Could not create operator");
         return;
       }
-      setOpName("");
-      setOpEmail("");
-      setOpPassword("");
-      setShowOpForm(false);
+      closeModal();
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveOperator(e: FormEvent) {
+    e.preventDefault();
+    if (!editOp) return;
+    setBusy(true);
+    setError("");
+    try {
+      const body: Record<string, string> = {
+        name: opName,
+        email: opEmail,
+      };
+      if (opPassword.trim()) body.password = opPassword.trim();
+
+      const res = await fetch(`/api/operators/${editOp.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Could not update operator");
+        return;
+      }
+      closeModal();
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteOperator() {
+    if (!editOp) return;
+    if (!window.confirm(`Delete operator ${editOp.name}? Questionnaires will be unassigned.`)) {
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/operators/${editOp.id}`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Could not delete operator");
+        return;
+      }
+      closeModal();
       await load();
     } finally {
       setBusy(false);
@@ -172,10 +253,7 @@ export default function AccountManagerPage() {
         setError(json.error || "Could not create questionnaire");
         return;
       }
-      setAccName("");
-      setAccExternalId("");
-      setAccPassword("");
-      setShowAccForm(false);
+      closeModal();
       await load();
     } finally {
       setBusy(false);
@@ -235,7 +313,7 @@ export default function AccountManagerPage() {
 
   return (
     <section className="admin-section">
-      {error ? <div className="status-error">{error}</div> : null}
+      {error && !modal ? <div className="status-error">{error}</div> : null}
 
       <div className="am-board">
         <div
@@ -254,44 +332,10 @@ export default function AccountManagerPage() {
             <h3>
               Accounts <span className="count">({data.stats.accounts})</span>
             </h3>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setShowAccForm((v) => !v)}
-            >
-              {showAccForm ? "Cancel" : "Add Account"}
+            <button type="button" className="btn-primary" onClick={openCreateAccount}>
+              Add Account
             </button>
           </div>
-          {showAccForm ? (
-            <form className="am-add-panel" onSubmit={createAccount}>
-              <div className="form-grid">
-                <input
-                  placeholder="Display name"
-                  value={accName}
-                  onChange={(e) => setAccName(e.target.value)}
-                  required
-                />
-                <input
-                  placeholder="Golden ID"
-                  value={accExternalId}
-                  onChange={(e) => setAccExternalId(e.target.value)}
-                  required
-                />
-                <input
-                  placeholder="Golden password"
-                  type="password"
-                  value={accPassword}
-                  onChange={(e) => setAccPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="am-add-actions">
-                <button type="submit" className="btn-primary" disabled={busy}>
-                  Create
-                </button>
-              </div>
-            </form>
-          ) : null}
           <div className="am-col-body">
             {data.accounts.length === 0 ? (
               <p className="empty-state">
@@ -313,9 +357,6 @@ export default function AccountManagerPage() {
                     <p className="account-name">{a.displayName}</p>
                     <p className="account-sub">ID {a.externalId}</p>
                   </div>
-                  <button type="button" className="account-edit-btn" title="Edit" disabled>
-                    <PencilIcon />
-                  </button>
                 </div>
               ))
             )}
@@ -328,46 +369,10 @@ export default function AccountManagerPage() {
               Operators <span className="count">({data.stats.operators})</span>
             </h3>
             <span className="am-in-work">{data.stats.ladiesInWork} ladies in work</span>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setShowOpForm((v) => !v)}
-            >
-              {showOpForm ? "Cancel" : "Add Operator"}
+            <button type="button" className="btn-primary" onClick={openCreateOperator}>
+              Add Operator
             </button>
           </div>
-          {showOpForm ? (
-            <form className="am-add-panel" onSubmit={createOperator}>
-              <div className="form-grid">
-                <input
-                  placeholder="Name"
-                  value={opName}
-                  onChange={(e) => setOpName(e.target.value)}
-                  required
-                />
-                <input
-                  placeholder="Email"
-                  type="email"
-                  value={opEmail}
-                  onChange={(e) => setOpEmail(e.target.value)}
-                  required
-                />
-                <input
-                  placeholder="Password"
-                  type="password"
-                  value={opPassword}
-                  onChange={(e) => setOpPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-              <div className="am-add-actions">
-                <button type="submit" className="btn-primary" disabled={busy}>
-                  Create
-                </button>
-              </div>
-            </form>
-          ) : null}
           <div className="am-col-body am-operators-body">
             {data.operators.length === 0 ? (
               <p className="empty-state">No operators yet</p>
@@ -404,8 +409,8 @@ export default function AccountManagerPage() {
                       <button
                         type="button"
                         className="account-edit-btn"
-                        title="Edit"
-                        disabled
+                        title="Edit operator"
+                        onClick={() => openEditOperator(op)}
                       >
                         <PencilIcon />
                       </button>
@@ -434,14 +439,6 @@ export default function AccountManagerPage() {
                               <p className="account-name">{a.displayName}</p>
                               <p className="account-sub">ID {a.externalId}</p>
                             </div>
-                            <button
-                              type="button"
-                              className="linked-edit"
-                              title="Edit"
-                              disabled
-                            >
-                              <PencilIcon />
-                            </button>
                           </div>
                         ))
                       )}
@@ -501,6 +498,171 @@ export default function AccountManagerPage() {
           </div>
         </div>
       </div>
+
+      {modal === "account" ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <form className="modal-card create-modal" onSubmit={createAccount}>
+            <div className="create-modal-head">
+              <h3 className="modal-title">Create Account</h3>
+              <button
+                type="button"
+                className="modal-close"
+                aria-label="Close"
+                onClick={closeModal}
+              >
+                ×
+              </button>
+            </div>
+            {error ? <div className="status-error">{error}</div> : null}
+            <div className="form-grid">
+              <input
+                placeholder="Display name"
+                value={accName}
+                onChange={(e) => setAccName(e.target.value)}
+                required
+                autoFocus
+              />
+              <input
+                placeholder="Golden ID"
+                value={accExternalId}
+                onChange={(e) => setAccExternalId(e.target.value)}
+                required
+              />
+              <input
+                placeholder="Golden password"
+                type="password"
+                value={accPassword}
+                onChange={(e) => setAccPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" className="btn-submit" disabled={busy}>
+              Submit
+            </button>
+          </form>
+        </div>
+      ) : null}
+
+      {modal === "operator-create" ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <form className="modal-card create-modal" onSubmit={createOperator}>
+            <div className="create-modal-head">
+              <h3 className="modal-title">Create Operator</h3>
+              <button
+                type="button"
+                className="modal-close"
+                aria-label="Close"
+                onClick={closeModal}
+              >
+                ×
+              </button>
+            </div>
+            {error ? <div className="status-error">{error}</div> : null}
+            <div className="form-grid">
+              <input
+                placeholder="Name"
+                value={opName}
+                onChange={(e) => setOpName(e.target.value)}
+                required
+                autoFocus
+              />
+              <input
+                placeholder="Login (email)"
+                type="email"
+                value={opEmail}
+                onChange={(e) => setOpEmail(e.target.value)}
+                required
+              />
+              <input
+                placeholder="Password"
+                type="password"
+                value={opPassword}
+                onChange={(e) => setOpPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            <button type="submit" className="btn-submit" disabled={busy}>
+              Submit
+            </button>
+          </form>
+        </div>
+      ) : null}
+
+      {modal === "operator-edit" && editOp ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <form className="modal-card create-modal" onSubmit={saveOperator}>
+            <div className="create-modal-head">
+              <h3 className="modal-title">Edit Operator</h3>
+              <button
+                type="button"
+                className="modal-close"
+                aria-label="Close"
+                onClick={closeModal}
+              >
+                ×
+              </button>
+            </div>
+            {error ? <div className="status-error">{error}</div> : null}
+            <p className="modal-hint">Leave password empty to keep the current one.</p>
+            <div className="form-grid">
+              <input
+                placeholder="Name"
+                value={opName}
+                onChange={(e) => setOpName(e.target.value)}
+                required
+                autoFocus
+              />
+              <input
+                placeholder="Login (email)"
+                type="email"
+                value={opEmail}
+                onChange={(e) => setOpEmail(e.target.value)}
+                required
+              />
+              <input
+                placeholder="New password (optional)"
+                type="password"
+                value={opPassword}
+                onChange={(e) => setOpPassword(e.target.value)}
+                minLength={6}
+              />
+            </div>
+            <button type="submit" className="btn-submit" disabled={busy}>
+              Save
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              disabled={busy}
+              onClick={deleteOperator}
+            >
+              Delete operator
+            </button>
+          </form>
+        </div>
+      ) : null}
     </section>
   );
 }

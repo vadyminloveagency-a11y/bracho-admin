@@ -525,7 +525,7 @@
 
 .operators-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   align-content: start;
   width: 100%;
@@ -631,7 +631,9 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  min-height: 48px;
+  min-height: 36px;
+  max-height: 180px;
+  overflow: auto;
   background: rgba(6, 10, 14, 0.35);
 }
 
@@ -640,6 +642,137 @@
   justify-content: center;
   color: var(--muted);
   font-size: 12px;
+  min-height: 36px;
+  max-height: none;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(5, 8, 12, 0.78);
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 28px 26px 24px;
+  border: 1px solid rgba(255, 43, 58, 0.22);
+  border-radius: 16px;
+  background: rgba(10, 14, 20, 0.97);
+  box-shadow: var(--shadow);
+}
+
+.create-modal-head {
+  position: relative;
+  margin: 0 0 22px;
+  text-align: center;
+}
+
+.create-modal-head .modal-title {
+  margin: 0;
+  padding: 0 36px;
+  font: 700 20px/1.25 var(--font);
+  letter-spacing: -0.02em;
+}
+
+.modal-close {
+  position: absolute;
+  top: -4px;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(10, 14, 18, 0.75);
+  color: var(--muted);
+  font: 700 16px/1 var(--font);
+}
+
+.modal-close:hover {
+  color: var(--danger);
+  border-color: rgba(214, 69, 90, 0.35);
+  background: var(--danger-soft);
+}
+
+.create-modal .form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.create-modal .form-grid input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(13, 19, 23, 0.72);
+  color: var(--text);
+  font: 14px/1.2 var(--font);
+  outline: none;
+}
+
+.create-modal .form-grid input:focus {
+  border-color: rgba(255, 43, 58, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 43, 58, 0.1);
+}
+
+.create-modal .btn-submit {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid rgba(255, 43, 58, 0.45);
+  border-radius: 7px;
+  background: #140f11;
+  color: #fff;
+  font: 800 13px/1 var(--font);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-modal .btn-submit:hover:not(:disabled) {
+  background: #1f1215;
+  border-color: rgba(255, 43, 58, 0.7);
+}
+
+.create-modal .btn-danger {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 10px;
+  border: 1px solid rgba(255, 91, 104, 0.45);
+  border-radius: 7px;
+  background: #1a1012;
+  color: #ff8a95;
+  font: 800 13px/1 var(--font);
+}
+
+.create-modal .modal-hint {
+  margin: -8px 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 1100px) {
+  .operators-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .operators-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .linked-account {
