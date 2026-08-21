@@ -91,4 +91,22 @@ export async function ensureSchema() {
   } catch {
     // ignore
   }
+
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "GoldmanManId" (
+        "id" TEXT NOT NULL,
+        "externalId" TEXT NOT NULL,
+        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "GoldmanManId_pkey" PRIMARY KEY ("id")
+      )
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "GoldmanManId_externalId_key"
+      ON "GoldmanManId"("externalId")
+    `);
+  } catch {
+    // ignore
+  }
 }

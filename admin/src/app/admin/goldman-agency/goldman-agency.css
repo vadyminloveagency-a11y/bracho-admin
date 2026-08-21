@@ -1,0 +1,238 @@
+.ga-page {
+  min-height: 100%;
+  padding: 28px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ga-banner-error {
+  max-width: 320px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 91, 104, 0.28);
+  background: rgba(255, 43, 58, 0.12);
+  color: #ff8a96;
+  font-size: 12px;
+}
+
+.ga-card {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 10px;
+  border: 1px solid #7eb6e8;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ga-card-head {
+  margin: 0;
+  padding: 10px 14px;
+  background: #a8d4f0;
+  color: #1a2a36;
+  font: 700 15px/1.2 "Segoe UI", system-ui, sans-serif;
+  border-bottom: 1px solid #7eb6e8;
+}
+
+.ga-list {
+  height: 280px;
+  overflow-y: auto;
+  background: #fff;
+  border-bottom: 1px solid #c9d8e4;
+}
+
+.ga-empty {
+  margin: 0;
+  padding: 24px 14px;
+  color: #7a8a98;
+  font: 400 13px/1.4 "Segoe UI", system-ui, sans-serif;
+  text-align: center;
+}
+
+.ga-row {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 7px 14px;
+  border: 0;
+  border-bottom: 1px solid #edf2f6;
+  background: transparent;
+  color: #1c2830;
+  font: 500 14px/1.35 "Consolas", "Segoe UI", monospace;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ga-row:hover {
+  background: #f3f8fc;
+}
+
+.ga-row.is-selected {
+  background: #d6ebf8;
+}
+
+.ga-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 10px;
+  background: #f7fafc;
+}
+
+.ga-btn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.ga-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.ga-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ga-btn-add {
+  background: #2f9e44;
+}
+
+.ga-btn-add:hover:not(:disabled) {
+  background: #288a3a;
+}
+
+.ga-btn-del {
+  background: #e03131;
+}
+
+.ga-btn-del:hover:not(:disabled) {
+  background: #c92a2a;
+}
+
+.ga-btn-edit {
+  background: #868e96;
+}
+
+.ga-btn-edit:hover:not(:disabled) {
+  background: #737b83;
+}
+
+.ga-btn-send {
+  background: #7048e8;
+}
+
+.ga-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(10, 14, 18, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.ga-modal {
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  padding: 0 0 16px;
+  overflow: hidden;
+}
+
+.ga-modal-title {
+  margin: 0;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #e6e8ec;
+  color: #1c2830;
+  font: 700 18px/1.2 "Segoe UI", system-ui, sans-serif;
+}
+
+.ga-modal-input {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 18px 20px 8px;
+  padding: 12px 14px;
+  border: 2px solid #9b7ef0;
+  border-radius: 8px;
+  background: #fff;
+  color: #1c2830;
+  font: 500 16px/1.2 "Segoe UI", system-ui, sans-serif;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ga-modal-input:focus {
+  border-color: #7048e8;
+  box-shadow: 0 0 0 3px rgba(112, 72, 232, 0.18);
+}
+
+.ga-modal-error {
+  margin: 0 20px 8px;
+  color: #e03131;
+  font-size: 13px;
+}
+
+.ga-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 8px 20px 0;
+}
+
+.ga-modal-cancel,
+.ga-modal-ok {
+  min-width: 96px;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  font: 600 14px/1 "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.ga-modal-cancel {
+  background: #868e96;
+}
+
+.ga-modal-cancel:hover:not(:disabled) {
+  background: #737b83;
+}
+
+.ga-modal-ok {
+  background: #7048e8;
+}
+
+.ga-modal-ok:hover:not(:disabled) {
+  background: #5f3dc4;
+}
+
+.ga-modal-cancel:disabled,
+.ga-modal-ok:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .ga-page {
+    padding: 16px 12px 28px;
+  }
+
+  .ga-card {
+    max-width: none;
+  }
+}

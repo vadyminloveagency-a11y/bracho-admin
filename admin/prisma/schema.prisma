@@ -65,3 +65,12 @@ model AnketaPresence {
   @@index([lastSeenAt])
   @@index([operatorId])
 }
+
+/// Men's Golden IDs for Goldman Agency list (director-managed).
+model GoldmanManId {
+  id         String   @id @default(cuid())
+  /// Men's profile ID on Golden Bride
+  externalId String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
