@@ -77,22 +77,34 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** Operator: clear presence for one anketa or all of this operator. */
+/** Clear presence: director (force offline) or operator (own anketa). */
 export async function DELETE(req: NextRequest) {
   try {
     const session = await readSession(req.headers.get("authorization"));
-    requireOperator(session);
+    if (!session) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const url = new URL(req.url);
     const anketaId = url.searchParams.get("anketaId");
 
+    if (session.role === "DIRECTOR") {
+      if (!anketaId) {
+        return NextResponse.json({ error: "anketaId required" }, { status: 400 });
+      }
+      await prisma.anketaPresence.deleteMany({ where: { anketaId } });
+      return NextResponse.json({ ok: true });
+    }
+
+    requireOperator(session);
+
     if (anketaId) {
       await prisma.anketaPresence.deleteMany({
-        where: { anketaId, operatorId: session!.id },
+        where: { anketaId, operatorId: session.id },
       });
     } else {
       await prisma.anketaPresence.deleteMany({
-        where: { operatorId: session!.id },
+        where: { operatorId: session.id },
       });
     }
 

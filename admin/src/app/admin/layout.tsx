@@ -2,10 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readSession } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
-
-const NAV = [
-  { href: "/admin/account-manager", label: "Account Manager" },
-];
+import "./account-manager/account-manager.css";
 
 export default async function AdminLayout({
   children,
@@ -16,69 +13,37 @@ export default async function AdminLayout({
   if (!session || session.role !== "DIRECTOR") redirect("/login");
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "grid",
-        gridTemplateColumns: "220px 1fr",
-        background: "#141210",
-      }}
-    >
-      <aside
-        style={{
-          borderRight: "1px solid rgba(255, 43, 58, 0.28)",
-          background: "#0d0a0b",
-          padding: "20px 14px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 18,
-        }}
-      >
-        <div>
+    <div className="panel-layout">
+      <div className="admin-sidebar-spacer" aria-hidden="true" />
+      <aside className="admin-sidebar">
+        <div className="sidebar-top">
+          <p className="sidebar-brand">Bracho</p>
+          <p className="sidebar-user">{session.name}</p>
+        </div>
+
+        <div className="sidebar-section-title">Manage</div>
+        <nav className="sidebar-nav">
           <Link
             href="/admin/account-manager"
-            style={{
-              fontFamily: "var(--font-display), Georgia, serif",
-              fontSize: 26,
-              letterSpacing: "0.04em",
-              color: "#f8fbff",
-            }}
+            className="sidebar-nav-btn is-active"
+            aria-label="Account Manager"
           >
-            Bracho
+            <span className="sidebar-nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="4" width="7" height="7" rx="1.5" />
+                <rect x="14" y="4" width="7" height="7" rx="1.5" />
+                <rect x="3" y="13" width="7" height="7" rx="1.5" />
+                <rect x="14" y="13" width="7" height="7" rx="1.5" />
+              </svg>
+            </span>
+            <span className="sidebar-nav-label">Account Manager</span>
           </Link>
-          <p style={{ margin: "6px 0 0", color: "#98a1aa", fontSize: 12 }}>
-            Director
-          </p>
-        </div>
-
-        <nav style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              style={{
-                display: "block",
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid rgba(255, 43, 58, 0.45)",
-                background: "rgba(255, 43, 58, 0.12)",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {item.label}
-            </Link>
-          ))}
         </nav>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <span style={{ color: "#98a1aa", fontSize: 13 }}>{session.name}</span>
-          <LogoutButton />
-        </div>
+        <LogoutButton />
       </aside>
 
-      <div style={{ minWidth: 0, minHeight: "100vh" }}>{children}</div>
+      <main className="admin-main">{children}</main>
     </div>
   );
 }

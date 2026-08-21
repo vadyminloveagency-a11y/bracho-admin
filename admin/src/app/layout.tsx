@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
-import { Libre_Baskerville, Source_Sans_3 } from "next/font/google";
+import { Varela_Round } from "next/font/google";
 import "./globals.css";
 
-const display = Libre_Baskerville({
-  weight: ["400", "700"],
-  subsets: ["latin", "latin-ext"],
-  variable: "--font-display",
-});
-
-const body = Source_Sans_3({
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  variable: "--font-body",
+const font = Varela_Round({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-varela",
 });
 
 export const metadata: Metadata = {
@@ -25,10 +20,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru">
-      <body className={`${display.variable} ${body.variable} antialiased`}>
-        <div style={{ fontFamily: "var(--font-body), system-ui, sans-serif" }}>
-          {children}
-        </div>
+      <body
+        className={font.variable}
+        style={{ fontFamily: 'var(--font-varela), "Varela Round", "Segoe UI", sans-serif' }}
+      >
+        {children}
       </body>
     </html>
   );

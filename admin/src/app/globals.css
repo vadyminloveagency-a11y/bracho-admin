@@ -1,40 +1,80 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #1c1c1c;
-  --bg-elevated: #262626;
-  --bg-input: #2f2f2f;
-  --line: #3a3a3a;
-  --text: #f2f2f2;
-  --muted: #a3a3a3;
-  --accent: #9b1c1c;
-  --accent-hover: #c62828;
+  --bg-0: #0a0d14;
+  --bg-1: #0e1216;
+  --bg-2: #161b20;
+  --bg-3: #1b2127;
+  --surface: rgba(24, 29, 34, 0.72);
+  --line: rgba(78, 98, 108, 0.45);
+  --line-strong: rgba(255, 43, 58, 0.28);
+  --text: #e9edf1;
+  --text-soft: #c7cdd4;
+  --muted: #98a1aa;
+  --accent: #ff4757;
+  --accent-strong: #ff2b3a;
+  --accent-soft: rgba(255, 43, 58, 0.14);
+  --ok: #23d18b;
+  --ok-soft: rgba(4, 242, 160, 0.12);
+  --danger: #ff5b68;
+  --danger-soft: rgba(255, 91, 104, 0.12);
+  --radius: 12px;
+  --font: var(--font-varela), "Varela Round", "Segoe UI", sans-serif;
+  --shadow:
+    0 18px 48px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(255, 43, 58, 0.1),
+    0 0 32px rgba(255, 43, 58, 0.05);
+  --sidebar: rgb(16, 19, 23);
+  --ui-vh: 100vh;
 }
 
 @theme inline {
-  --color-background: var(--bg);
+  --color-background: var(--bg-1);
   --color-foreground: var(--text);
-  --font-sans: var(--font-display);
+  --font-sans: var(--font);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 * {
-  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(152, 161, 170, 0.35) #11151a;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #11151a;
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(152, 161, 170, 0.3);
+  border-radius: 8px;
+  border: 2px solid #11151a;
 }
 
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--bg);
+  background: var(--bg-0);
   color: var(--text);
 }
 
 body {
-  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-family: var(--font);
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(155, 28, 28, 0.18), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(255, 255, 255, 0.04), transparent 45%),
-    var(--bg);
+    radial-gradient(900px 420px at 12% -8%, rgba(255, 43, 58, 0.12), transparent 55%),
+    radial-gradient(700px 360px at 100% 0%, rgba(255, 255, 255, 0.03), transparent 45%),
+    var(--bg-0);
 }
 
 a {
@@ -47,4 +87,13 @@ button,
 textarea,
 select {
   font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
