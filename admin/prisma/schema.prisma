@@ -15,6 +15,10 @@ model User {
   /// DIRECTOR | OPERATOR
   role         String   @default("OPERATOR")
   active       Boolean  @default(true)
+  /// Global Sync site login (plain; not Bracho login)
+  globalSyncLogin String @default("")
+  /// Encrypted Global Sync password
+  globalSyncPasswordEnc String @default("")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

@@ -9,6 +9,16 @@ contextBridge.exposeInMainWorld("brachoBar", {
   zoomBy: (delta) => ipcRenderer.invoke("workspace:zoom", delta),
   zoomSet: (value) => ipcRenderer.invoke("workspace:zoom-set", value),
   getState: () => ipcRenderer.invoke("workspace:state"),
+  toggleProfileVisit: () => ipcRenderer.invoke("workspace:profile-visit-toggle"),
+  toggleProfileVisitLoop: (manId) =>
+    ipcRenderer.invoke("workspace:profile-visit-loop", manId),
+  stopProfileVisit: () => ipcRenderer.invoke("workspace:profile-visit-stop"),
+  getTranslatorSettings: () => ipcRenderer.invoke("translator:get-settings"),
+  saveTranslatorSettings: (payload) =>
+    ipcRenderer.invoke("translator:save-settings", payload),
+  openTranslatorSettings: () => ipcRenderer.invoke("translator:settings-open"),
+  closeTranslatorSettings: () => ipcRenderer.invoke("translator:settings-close"),
+  openGlobalSync: () => ipcRenderer.invoke("workspace:open-global-sync"),
   onState: (cb) => {
     const handler = (_e, state) => cb(state);
     ipcRenderer.on("workspace:state", handler);

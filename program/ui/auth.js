@@ -290,13 +290,30 @@
         (selectedIds.has(id) ? " is-selected" : "");
       btn.innerHTML = `
         <span class="agency-profile-picker-check" aria-hidden="true"></span>
-        <span class="agency-profile-picker-avatar">${escapeHtml(initials(a.displayName))}</span>
+        ${
+          a.avatarUrl
+            ? `<img class="agency-profile-picker-avatar" src="${escapeHtml(
+                a.avatarUrl,
+              )}" alt="" referrerpolicy="no-referrer" />`
+            : `<span class="agency-profile-picker-avatar">${escapeHtml(
+                initials(a.displayName),
+              )}</span>`
+        }
         <span>
           <div class="agency-profile-picker-name">${escapeHtml(a.displayName)}</div>
           <div class="agency-profile-picker-meta">ID ${escapeHtml(a.externalId)}</div>
         </span>
         ${alreadyOpen ? '<span class="agency-profile-picker-badge">Open</span>' : ""}
       `;
+      const avatarImg = btn.querySelector("img.agency-profile-picker-avatar");
+      if (avatarImg) {
+        avatarImg.addEventListener("error", () => {
+          const fallback = document.createElement("span");
+          fallback.className = "agency-profile-picker-avatar";
+          fallback.textContent = initials(a.displayName);
+          avatarImg.replaceWith(fallback);
+        });
+      }
       btn.addEventListener("click", async () => {
         if (batchRunning) return;
         if (alreadyOpen) {

@@ -92,6 +92,38 @@
       border-color: rgba(255, 43, 58, 0.75);
     }
     .btn:disabled { opacity: 0.45; cursor: wait; }
+    .btn-visit {
+      border-color: rgba(255, 140, 0, 0.55);
+      color: #ffd8a8;
+      min-width: 108px;
+    }
+    .btn-visit:hover:not(:disabled) {
+      background: rgba(255, 140, 0, 0.14);
+      border-color: rgba(255, 140, 0, 0.85);
+    }
+    .btn-visit.is-running {
+      border-color: rgba(255, 140, 0, 0.9);
+      background: rgba(255, 140, 0, 0.22);
+      color: #fff0d6;
+    }
+    .bar-toast {
+      position: absolute;
+      left: 50%;
+      top: calc(100% + 6px);
+      transform: translateX(-50%);
+      z-index: 20;
+      max-width: min(420px, 90vw);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 43, 58, 0.45);
+      background: rgba(20, 10, 12, 0.96);
+      color: #ffd0d5;
+      font: 600 12px/1.3 var(--font);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .bar-toast.is-on { opacity: 1; }
     .btn-add {
       border-color: rgba(255, 43, 58, 0.7); color: var(--accent);
       background: transparent; min-width: 32px; padding: 0 10px;
@@ -156,6 +188,102 @@
     @keyframes auth-session-spin { to { transform: rotate(360deg); } }
     .loader-title { margin: 0; color: #f8fbff; font: 700 18px/1.2 var(--font); }
     .loader-msg { margin: 0; color: #98a1aa; font-size: 12px; text-align: center; min-height: 1.2em; }
+    .btn-sync {
+      border-color: rgba(34, 197, 94, 0.5);
+      color: #86efac;
+      min-width: 64px;
+    }
+    .btn-sync:hover:not(:disabled) {
+      background: rgba(34, 197, 94, 0.14);
+      border-color: rgba(34, 197, 94, 0.85);
+    }
+    .btn-gear {
+      min-width: 32px;
+      padding: 0 8px;
+      display: inline-grid;
+      place-items: center;
+    }
+    .btn-gear svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+    .settings-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 64px 16px 24px;
+      background: rgba(5, 8, 12, 0.72);
+      overflow: auto;
+    }
+    .settings-panel.is-open { display: flex; }
+    .settings-card {
+      width: min(440px, 100%);
+      border: 1px solid rgba(78, 98, 108, 0.55);
+      border-radius: 12px;
+      background: #12171c;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      padding: 0 0 14px;
+    }
+    .settings-card h2 {
+      margin: 0;
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid rgba(78, 98, 108, 0.45);
+      font: 700 16px/1.2 var(--font);
+      color: #eef2f6;
+    }
+    .settings-hint {
+      margin: 12px 18px 0;
+      color: #98a1aa;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .settings-field {
+      margin: 12px 18px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .settings-field label {
+      color: #dde3e9;
+      font: 600 12px/1.2 var(--font);
+    }
+    .settings-field input,
+    .settings-field select {
+      height: 36px;
+      padding: 0 12px;
+      border: 1px solid rgba(112, 72, 232, 0.45);
+      border-radius: 8px;
+      background: #0e1216;
+      color: #eef2f6;
+      font: 500 13px/1.2 ui-monospace, Consolas, monospace;
+      outline: none;
+    }
+    .settings-field select {
+      font-family: var(--font);
+    }
+    .settings-field input:focus,
+    .settings-field select:focus {
+      border-color: rgba(112, 72, 232, 0.9);
+      box-shadow: 0 0 0 3px rgba(112, 72, 232, 0.18);
+    }
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 16px 18px 0;
+    }
+    .settings-actions .btn {
+      min-width: 96px;
+    }
+    .settings-actions .btn-save {
+      border-color: rgba(112, 72, 232, 0.55);
+      background: #241a3d;
+      color: #e8deff;
+    }
   </style>
 </head>
 <body>
@@ -169,7 +297,48 @@
         <button type="button" class="btn" id="zoom-in" title="Zoom in">+</button>
       </div>
       <button type="button" class="btn" id="reload" title="Reload current tab">Reload</button>
+      <button type="button" class="btn btn-sync" id="global-sync" title="Open Global Sync">Sync</button>
+      <button type="button" class="btn btn-gear" id="settings" title="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.2 7.2 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.57.23-1.11.54-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.77 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.89 14.5a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.5.4 1.05.72 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.57-.23 1.11-.54 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+      </button>
       <button type="button" class="btn" id="exit">Exit</button>
+    </div>
+    <div class="bar-toast" id="bar-toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <div class="settings-panel" id="settings-panel" aria-hidden="true">
+    <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <h2 id="settings-title">Settings</h2>
+      <p class="settings-hint">
+        Translator: <b>Ctrl+Space</b>. Page text → popup (RU or UK). Chat input → whole field to English.
+        Drag the popup by its title bar. Spelling (ПКМ): LanguageTool suggestions like Edge (needs internet).
+      </p>
+      <div class="settings-field">
+        <label for="tr-provider">Provider</label>
+        <select id="tr-provider">
+          <option value="google">Google</option>
+          <option value="deepl">DeepL</option>
+        </select>
+      </div>
+      <div class="settings-field">
+        <label for="tr-read-lang">Translate selected text to</label>
+        <select id="tr-read-lang">
+          <option value="ru">Русский</option>
+          <option value="uk">Українська</option>
+        </select>
+      </div>
+      <div class="settings-field">
+        <label for="tr-google">Google API key</label>
+        <input id="tr-google" type="password" autocomplete="off" placeholder="AIza..." />
+      </div>
+      <div class="settings-field">
+        <label for="tr-deepl">DeepL API key</label>
+        <input id="tr-deepl" type="password" autocomplete="off" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx" />
+      </div>
+      <div class="settings-actions">
+        <button type="button" class="btn" id="settings-cancel">Cancel</button>
+        <button type="button" class="btn btn-save" id="settings-save">Save</button>
+      </div>
     </div>
   </div>
 
@@ -210,6 +379,10 @@
 
     function setZoomLabel(zoom) {
       zoomLabel.textContent = Math.round(Number(zoom) * 100) + "%";
+    }
+
+    function setVisitButton(_state) {
+      // Visit online toggle lives inside Golden chat, not the top bar.
     }
 
     function setLoading(on, message) {
@@ -259,6 +432,7 @@
     function renderState(state) {
       renderTabs(state);
       if (typeof state?.zoom === "number") setZoomLabel(state.zoom);
+      setVisitButton(state);
     }
 
     document.getElementById("add").onclick = () => {
@@ -267,6 +441,19 @@
     document.getElementById("reload").onclick = () => {
       if (!loading) window.brachoBar.reloadTab();
     };
+    const barToast = document.getElementById("bar-toast");
+    let toastTimer = null;
+
+    function showToast(message) {
+      if (!barToast) return;
+      barToast.textContent = String(message || "");
+      barToast.classList.add("is-on");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        barToast.classList.remove("is-on");
+      }, 3200);
+    }
+
     document.getElementById("zoom-out").onclick = async () => {
       const res = await window.brachoBar.zoomBy(-0.1);
       if (typeof res?.zoom === "number") setZoomLabel(res.zoom);
@@ -282,6 +469,55 @@
     document.getElementById("exit").onclick = () => {
       if (!loading) window.brachoBar.exit();
     };
+
+    const settingsPanel = document.getElementById("settings-panel");
+    const trProvider = document.getElementById("tr-provider");
+    const trReadLang = document.getElementById("tr-read-lang");
+    const trGoogle = document.getElementById("tr-google");
+    const trDeepl = document.getElementById("tr-deepl");
+
+    async function openSettings() {
+      if (loading) return;
+      const s = await window.brachoBar.openTranslatorSettings();
+      trProvider.value = s.provider === "deepl" ? "deepl" : "google";
+      trReadLang.value = s.readTarget === "uk" ? "uk" : "ru";
+      trGoogle.value = s.googleApiKey || "";
+      trDeepl.value = s.deeplApiKey || "";
+      settingsPanel.classList.add("is-open");
+      settingsPanel.setAttribute("aria-hidden", "false");
+    }
+
+    async function closeSettings() {
+      settingsPanel.classList.remove("is-open");
+      settingsPanel.setAttribute("aria-hidden", "true");
+      await window.brachoBar.closeTranslatorSettings();
+    }
+
+    document.getElementById("settings").onclick = () => openSettings();
+    document.getElementById("settings-cancel").onclick = () => closeSettings();
+    document.getElementById("settings-save").onclick = async () => {
+      await window.brachoBar.saveTranslatorSettings({
+        provider: trProvider.value,
+        readTarget: trReadLang.value,
+        googleApiKey: trGoogle.value,
+        deeplApiKey: trDeepl.value,
+      });
+      showToast("Settings saved");
+      await closeSettings();
+    };
+    document.getElementById("global-sync").onclick = async () => {
+      if (loading) return;
+      const res = await window.brachoBar.openGlobalSync();
+      if (res && res.ok === false && res.error) showToast(res.error);
+    };
+    settingsPanel.addEventListener("click", (e) => {
+      if (e.target === settingsPanel) closeSettings();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && settingsPanel.classList.contains("is-open")) {
+        closeSettings();
+      }
+    });
 
     window.brachoBar.onState((state) => renderState(state));
     window.brachoBar.onZoom((payload) => {

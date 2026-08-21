@@ -3,6 +3,20 @@
  * contextIsolation is false so page patches apply.
  */
 
+const { ipcRenderer } = require("electron");
+
+window.__brachoIpc = {
+  visitToggle: () => ipcRenderer.invoke("bracho:profile-visit-toggle"),
+};
+
+ipcRenderer.on("bracho:profile-visit-state", (_e, state) => {
+  try {
+    if (typeof window.__brachoVisitSetState === "function") {
+      window.__brachoVisitSetState(state || {});
+    }
+  } catch (_) {}
+});
+
 /** Golden pages sleep hidden tabs. Stay "visible". */
 function keepPageVisible() {
   try {
