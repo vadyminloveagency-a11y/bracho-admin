@@ -18,7 +18,9 @@ const idSchema = z
 export async function GET() {
   try {
     const session = await readSession();
-    requireDirector(session);
+    if (!session || (session.role !== "DIRECTOR" && session.role !== "OPERATOR")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     await ensureSchema();
 
     const items = await prisma.goldmanManId.findMany({
@@ -31,7 +33,10 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ items });
+    return NextResponse.json({
+      items,
+      ids: items.map((i) => i.externalId),
+    });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
