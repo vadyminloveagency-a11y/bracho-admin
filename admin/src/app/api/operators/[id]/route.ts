@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { hashPassword, readSession, requireDirector } from "@/lib/auth";
-import { encryptSecret } from "@/lib/secret";
-import { ensureSchema } from "@/lib/ensure-schema";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -11,7 +9,6 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   try {
     const session = await readSession();
     requireDirector(session);
-    await ensureSchema();
     const { id } = await ctx.params;
 
     const operator = await prisma.user.findFirst({
@@ -22,8 +19,6 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
         name: true,
         active: true,
         createdAt: true,
-        globalSyncLogin: true,
-        globalSyncPasswordEnc: true,
         ankety: {
           orderBy: { createdAt: "desc" },
           select: {
@@ -42,14 +37,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const { globalSyncPasswordEnc, ...rest } = operator;
-    return NextResponse.json({
-      operator: {
-        ...rest,
-        globalSyncLogin: rest.globalSyncLogin || "",
-        hasGlobalSyncPassword: Boolean(globalSyncPasswordEnc),
-      },
-    });
+    return NextResponse.json({ operator });
   } catch {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -60,16 +48,12 @@ const patchSchema = z.object({
   name: z.string().min(2).max(80).optional(),
   email: z.string().email().optional(),
   password: z.string().min(6).max(100).optional(),
-  globalSyncLogin: z.string().max(120).optional(),
-  /** Empty / omitted = keep current Global Sync password */
-  globalSyncPassword: z.string().max(200).optional(),
 });
 
 export async function PATCH(req: NextRequest, ctx: Ctx) {
   try {
     const session = await readSession();
     requireDirector(session);
-    await ensureSchema();
     const { id } = await ctx.params;
     const data = patchSchema.parse(await req.json());
 
@@ -100,33 +84,11 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
         ...(data.password
           ? { passwordHash: await hashPassword(data.password) }
           : {}),
-        ...(data.globalSyncLogin !== undefined
-          ? { globalSyncLogin: data.globalSyncLogin.trim() }
-          : {}),
-        ...(data.globalSyncPassword && data.globalSyncPassword.trim()
-          ? { globalSyncPasswordEnc: encryptSecret(data.globalSyncPassword.trim()) }
-          : {}),
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        active: true,
-        globalSyncLogin: true,
-        globalSyncPasswordEnc: true,
-      },
+      select: { id: true, email: true, name: true, active: true },
     });
 
-    return NextResponse.json({
-      operator: {
-        id: operator.id,
-        email: operator.email,
-        name: operator.name,
-        active: operator.active,
-        globalSyncLogin: operator.globalSyncLogin || "",
-        hasGlobalSyncPassword: Boolean(operator.globalSyncPasswordEnc),
-      },
-    });
+    return NextResponse.json({ operator });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed";
     return NextResponse.json({ error: message }, { status: 400 });

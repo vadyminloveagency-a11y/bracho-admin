@@ -47,8 +47,6 @@ export async function GET() {
           name: true,
           active: true,
           createdAt: true,
-          globalSyncLogin: true,
-          globalSyncPasswordEnc: true,
           ankety: {
             orderBy: { displayName: "asc" },
             select: {
@@ -88,15 +86,9 @@ export async function GET() {
       operator: row.operator,
     }));
 
-    const operatorsOut = operators.map(({ globalSyncPasswordEnc, ...op }) => ({
-      ...op,
-      globalSyncLogin: op.globalSyncLogin || "",
-      hasGlobalSyncPassword: Boolean(globalSyncPasswordEnc),
-    }));
-
     return NextResponse.json({
       accounts,
-      operators: operatorsOut,
+      operators,
       online: onlineRows,
       stats: {
         accounts: accounts.length,

@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { readSession, requireOperator } from "@/lib/auth";
 import { decryptSecret } from "@/lib/secret";
-import { ensureSchema } from "@/lib/ensure-schema";
 
 export async function GET(req: NextRequest) {
   try {
     const session = await readSession(req.headers.get("authorization"));
     requireOperator(session);
-    await ensureSchema();
 
     const operator = await prisma.user.findUnique({
       where: { id: session!.id },
@@ -18,8 +16,6 @@ export async function GET(req: NextRequest) {
         name: true,
         role: true,
         active: true,
-        globalSyncLogin: true,
-        globalSyncPasswordEnc: true,
         ankety: {
           orderBy: { createdAt: "desc" },
           select: {
@@ -55,23 +51,12 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    let globalSyncPassword = "";
-    try {
-      globalSyncPassword = operator.globalSyncPasswordEnc
-        ? decryptSecret(operator.globalSyncPasswordEnc)
-        : "";
-    } catch {
-      globalSyncPassword = "";
-    }
-
     return NextResponse.json({
       operator: {
         id: operator.id,
         email: operator.email,
         name: operator.name,
         role: operator.role,
-        globalSyncLogin: operator.globalSyncLogin || "",
-        globalSyncPassword,
       },
       ankety,
     });

@@ -188,15 +188,6 @@
     @keyframes auth-session-spin { to { transform: rotate(360deg); } }
     .loader-title { margin: 0; color: #f8fbff; font: 700 18px/1.2 var(--font); }
     .loader-msg { margin: 0; color: #98a1aa; font-size: 12px; text-align: center; min-height: 1.2em; }
-    .btn-sync {
-      border-color: rgba(34, 197, 94, 0.5);
-      color: #86efac;
-      min-width: 64px;
-    }
-    .btn-sync:hover:not(:disabled) {
-      background: rgba(34, 197, 94, 0.14);
-      border-color: rgba(34, 197, 94, 0.85);
-    }
     .btn-gear {
       min-width: 32px;
       padding: 0 8px;
@@ -297,7 +288,6 @@
         <button type="button" class="btn" id="zoom-in" title="Zoom in">+</button>
       </div>
       <button type="button" class="btn" id="reload" title="Reload current tab">Reload</button>
-      <button type="button" class="btn btn-sync" id="global-sync" title="Open Global Sync">Sync</button>
       <button type="button" class="btn btn-gear" id="settings" title="Settings">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.2 7.2 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.57.23-1.11.54-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.77 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.89 14.5a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.5.4 1.05.72 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.57-.23 1.11-.54 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
       </button>
@@ -504,11 +494,6 @@
       });
       showToast("Settings saved");
       await closeSettings();
-    };
-    document.getElementById("global-sync").onclick = async () => {
-      if (loading) return;
-      const res = await window.brachoBar.openGlobalSync();
-      if (res && res.ok === false && res.error) showToast(res.error);
     };
     settingsPanel.addEventListener("click", (e) => {
       if (e.target === settingsPanel) closeSettings();

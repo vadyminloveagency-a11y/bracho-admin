@@ -24,8 +24,6 @@ type Operator = {
   email: string;
   name: string;
   active: boolean;
-  globalSyncLogin?: string;
-  hasGlobalSyncPassword?: boolean;
   ankety: Account[];
 };
 
@@ -157,8 +155,6 @@ export default function AccountManagerPage() {
   const [opName, setOpName] = useState("");
   const [opEmail, setOpEmail] = useState("");
   const [opPassword, setOpPassword] = useState("");
-  const [opGsLogin, setOpGsLogin] = useState("");
-  const [opGsPassword, setOpGsPassword] = useState("");
 
   const [accName, setAccName] = useState("");
   const [accExternalId, setAccExternalId] = useState("");
@@ -220,8 +216,6 @@ export default function AccountManagerPage() {
     setOpName("");
     setOpEmail("");
     setOpPassword("");
-    setOpGsLogin("");
-    setOpGsPassword("");
     setModal("operator-create");
   }
 
@@ -230,8 +224,6 @@ export default function AccountManagerPage() {
     setOpName(op.name);
     setOpEmail(op.email);
     setOpPassword("");
-    setOpGsLogin(op.globalSyncLogin || "");
-    setOpGsPassword("");
     setModal("operator-edit");
   }
 
@@ -240,18 +232,14 @@ export default function AccountManagerPage() {
     setBusy(true);
     setError("");
     try {
-      const body: Record<string, string> = {
-        name: opName,
-        email: opEmail,
-        password: opPassword,
-      };
-      if (opGsLogin.trim()) body.globalSyncLogin = opGsLogin.trim();
-      if (opGsPassword.trim()) body.globalSyncPassword = opGsPassword.trim();
-
       const res = await fetch("/api/operators", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          name: opName,
+          email: opEmail,
+          password: opPassword,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -274,10 +262,8 @@ export default function AccountManagerPage() {
       const body: Record<string, string> = {
         name: opName,
         email: opEmail,
-        globalSyncLogin: opGsLogin.trim(),
       };
       if (opPassword.trim()) body.password = opPassword.trim();
-      if (opGsPassword.trim()) body.globalSyncPassword = opGsPassword.trim();
 
       const res = await fetch(`/api/operators/${editOp.id}`, {
         method: "PATCH",
@@ -887,19 +873,6 @@ export default function AccountManagerPage() {
                 required
                 minLength={6}
               />
-              <input
-                placeholder="Global Sync login (optional)"
-                value={opGsLogin}
-                onChange={(e) => setOpGsLogin(e.target.value)}
-                autoComplete="off"
-              />
-              <input
-                placeholder="Global Sync password (optional)"
-                type="password"
-                value={opGsPassword}
-                onChange={(e) => setOpGsPassword(e.target.value)}
-                autoComplete="new-password"
-              />
             </div>
             <button type="submit" className="btn-submit" disabled={busy}>
               Submit
@@ -930,10 +903,7 @@ export default function AccountManagerPage() {
               </button>
             </div>
             {error ? <div className="status-error">{error}</div> : null}
-            <p className="modal-hint">
-              Leave Bracho / Global Sync passwords empty to keep the current ones.
-              {editOp.hasGlobalSyncPassword ? " Global Sync password is set." : ""}
-            </p>
+            <p className="modal-hint">Leave password empty to keep the current one.</p>
             <div className="form-grid">
               <input
                 placeholder="Name"
@@ -950,24 +920,11 @@ export default function AccountManagerPage() {
                 required
               />
               <input
-                placeholder="New Bracho password (optional)"
+                placeholder="New password (optional)"
                 type="password"
                 value={opPassword}
                 onChange={(e) => setOpPassword(e.target.value)}
                 minLength={6}
-              />
-              <input
-                placeholder="Global Sync login"
-                value={opGsLogin}
-                onChange={(e) => setOpGsLogin(e.target.value)}
-                autoComplete="off"
-              />
-              <input
-                placeholder="New Global Sync password (optional)"
-                type="password"
-                value={opGsPassword}
-                onChange={(e) => setOpGsPassword(e.target.value)}
-                autoComplete="new-password"
               />
             </div>
             <button type="submit" className="btn-submit" disabled={busy}>

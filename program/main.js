@@ -27,11 +27,8 @@ const {
   applyWriteTranslationScript,
   showTranslatePopupScript,
 } = require("./lib/golden-translator-ui");
-const { globalSyncAutofillScript } = require("./lib/global-sync");
 
 const GOLDEN_HOST = "https://goldenbride.net";
-const GLOBAL_SYNC_URL = "https://global-sync.org/login";
-const GLOBAL_SYNC_PARTITION = "persist:bracho-global-sync";
 const BAR_H = 48;
 const LOGIN_STAGGER_MS = 7000;
 const HOME_AFTER_CHAT_MS = 1000;
@@ -50,9 +47,6 @@ const LADY_TAB_COLORS = [
 
 let authWindow = null;
 let workWindow = null;
-/** Single shared Global Sync BrowserWindow (all operators ladies share one). */
-let globalSyncWindow = null;
-let globalSyncAutofillDone = false;
 /** Shared zoom for all Golden Bride BrowserViews (1 = 100%). */
 let goldenZoom = 1;
 
@@ -634,120 +628,6 @@ function largeBounds() {
     width: Math.max(1100, Math.min(width, 1440)),
     height: Math.max(720, Math.min(height, 900)),
   };
-}
-
-function getGlobalSyncSettings() {
-  const cfg = readConfig();
-  return {
-    login: String(cfg.globalSyncLogin || "").trim(),
-    password: String(cfg.globalSyncPassword || ""),
-  };
-}
-
-/** Prefer director-set credentials from API; cache locally for offline autofill. */
-async function resolveGlobalSyncCredentials() {
-  try {
-    const data = await api.fetchMyAnkety();
-    const login = String(data?.operator?.globalSyncLogin || "").trim();
-    const password = String(data?.operator?.globalSyncPassword || "");
-    try {
-      writeConfig({ globalSyncLogin: login, globalSyncPassword: password });
-    } catch (_) {}
-    return { login, password };
-  } catch (e) {
-    console.warn(
-      "[bracho] global-sync credentials from API",
-      e?.message || e,
-    );
-    return getGlobalSyncSettings();
-  }
-}
-
-async function tryGlobalSyncAutofill(wc) {
-  if (!wc || wc.isDestroyed()) return;
-  const { login, password } = await resolveGlobalSyncCredentials();
-  if (!login || !password) {
-    console.warn("[bracho] global-sync: no credentials (set in Account Manager)");
-    return;
-  }
-  try {
-    const href = wc.getURL() || "";
-    if (!/global-sync\.org/i.test(href)) return;
-  } catch (_) {
-    return;
-  }
-  try {
-    const res = await wc.executeJavaScript(
-      globalSyncAutofillScript(login, password),
-      true,
-    );
-    console.log("[bracho] global-sync autofill", res);
-    if (res?.ok && (res.submitted || res.skipped)) globalSyncAutofillDone = true;
-  } catch (e) {
-    console.warn("[bracho] global-sync autofill", e?.message || e);
-  }
-}
-
-function openGlobalSyncWindow() {
-  // Refresh director-set credentials before autofill.
-  resolveGlobalSyncCredentials().catch(() => {});
-
-  if (globalSyncWindow && !globalSyncWindow.isDestroyed()) {
-    if (globalSyncWindow.isMinimized()) globalSyncWindow.restore();
-    globalSyncWindow.show();
-    globalSyncWindow.focus();
-    globalSyncAutofillDone = false;
-    try {
-      const wc = globalSyncWindow.webContents;
-      setTimeout(() => tryGlobalSyncAutofill(wc).catch(() => {}), 400);
-    } catch (_) {}
-    return { ok: true, reused: true };
-  }
-
-  globalSyncAutofillDone = false;
-  const size = largeBounds();
-  globalSyncWindow = new BrowserWindow({
-    width: Math.min(1280, size.width),
-    height: Math.min(860, size.height),
-    minWidth: 900,
-    minHeight: 600,
-    title: "Global Sync",
-    icon: appIcon(),
-    backgroundColor: "#0b0f14",
-    show: true,
-    webPreferences: {
-      partition: GLOBAL_SYNC_PARTITION,
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      spellcheck: true,
-    },
-  });
-
-  globalSyncWindow.on("closed", () => {
-    globalSyncWindow = null;
-    globalSyncAutofillDone = false;
-  });
-
-  const wc = globalSyncWindow.webContents;
-  wc.setWindowOpenHandler(() => ({ action: "deny" }));
-
-  const scheduleAutofill = () => {
-    if (globalSyncAutofillDone) return;
-    setTimeout(() => tryGlobalSyncAutofill(wc).catch(() => {}), 600);
-    setTimeout(() => tryGlobalSyncAutofill(wc).catch(() => {}), 1800);
-    setTimeout(() => tryGlobalSyncAutofill(wc).catch(() => {}), 3500);
-  };
-
-  wc.on("did-finish-load", scheduleAutofill);
-  wc.on("did-navigate", scheduleAutofill);
-  wc.on("did-navigate-in-page", scheduleAutofill);
-
-  globalSyncWindow.loadURL(GLOBAL_SYNC_URL).catch((e) => {
-    console.warn("[bracho] global-sync load", e?.message || e);
-  });
-
-  return { ok: true, reused: false };
 }
 
 function firstName(displayName) {
@@ -2040,7 +1920,6 @@ ipcMain.handle("translator:settings-open", async () => {
   }
   return getTranslatorSettings();
 });
-ipcMain.handle("workspace:open-global-sync", async () => openGlobalSyncWindow());
 ipcMain.handle("translator:settings-close", async () => {
   layoutActiveView();
   bumpActivePageLayout();

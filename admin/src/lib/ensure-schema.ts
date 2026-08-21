@@ -94,17 +94,6 @@ export async function ensureSchema() {
 
   try {
     await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "globalSyncLogin" TEXT NOT NULL DEFAULT ''
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "globalSyncPasswordEnc" TEXT NOT NULL DEFAULT ''
-    `);
-  } catch {
-    // ignore
-  }
-
-  try {
-    await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "GoldmanManId" (
         "id" TEXT NOT NULL,
         "externalId" TEXT NOT NULL,

@@ -18,7 +18,6 @@ contextBridge.exposeInMainWorld("brachoBar", {
     ipcRenderer.invoke("translator:save-settings", payload),
   openTranslatorSettings: () => ipcRenderer.invoke("translator:settings-open"),
   closeTranslatorSettings: () => ipcRenderer.invoke("translator:settings-close"),
-  openGlobalSync: () => ipcRenderer.invoke("workspace:open-global-sync"),
   onState: (cb) => {
     const handler = (_e, state) => cb(state);
     ipcRenderer.on("workspace:state", handler);
