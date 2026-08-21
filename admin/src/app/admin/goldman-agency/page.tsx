@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import "./goldman-agency.css";
 
 type ManItem = {
@@ -10,15 +10,34 @@ type ManItem = {
   updatedAt: string;
 };
 
-type ModalMode = "add" | "edit" | null;
+type ModalMode = "add" | "edit" | "export" | null;
+
+function parseIdsFromText(text: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of text.split(/[\s,;]+/)) {
+    const id = part.replace(/\D/g, "");
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
 
 export default function GoldmanAgencyPage() {
   const [items, setItems] = useState<ManItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [okMsg, setOkMsg] = useState("");
   const [modal, setModal] = useState<ModalMode>(null);
-  const [draftId, setDraftId] = useState("");
+  const [draftText, setDraftText] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const exportText = useMemo(
+    () => items.map((i) => i.externalId).join("\n"),
+    [items],
+  );
 
   const load = useCallback(async () => {
     const res = await fetch("/api/goldman-agency");
@@ -36,8 +55,9 @@ export default function GoldmanAgencyPage() {
   }, [load]);
 
   function openAdd() {
-    setDraftId("");
+    setDraftText("");
     setError("");
+    setOkMsg("");
     setModal("add");
   }
 
@@ -51,43 +71,79 @@ export default function GoldmanAgencyPage() {
       setError("Выберите ID в списке");
       return;
     }
-    setDraftId(row.externalId);
+    setDraftText(row.externalId);
     setError("");
+    setOkMsg("");
     setModal("edit");
+  }
+
+  function openExport() {
+    setCopied(false);
+    setError("");
+    setOkMsg("");
+    setDraftText(exportText);
+    setModal("export");
   }
 
   function closeModal() {
     setModal(null);
-    setDraftId("");
+    setDraftText("");
+    setCopied(false);
+  }
+
+  async function copyExport() {
+    const text = exportText;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Не удалось скопировать");
+    }
   }
 
   async function submitModal(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
+    setOkMsg("");
     try {
       if (modal === "add") {
+        const ids = parseIdsFromText(draftText);
+        if (!ids.length) {
+          setError("Вставьте один или несколько ID");
+          return;
+        }
         const res = await fetch("/api/goldman-agency", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ externalId: draftId }),
+          body: JSON.stringify({ ids }),
         });
         const json = await res.json();
         if (!res.ok) {
           setError(json.error || "Не удалось добавить");
           return;
         }
-        setItems((prev) => [json.item, ...prev]);
-        setSelectedId(json.item.id);
+        await load();
+        setOkMsg(
+          `Добавлено: ${json.added ?? ids.length}${
+            json.skipped ? `, уже были: ${json.skipped}` : ""
+          }`,
+        );
         closeModal();
         return;
       }
 
       if (modal === "edit" && selectedId) {
+        const id = parseIdsFromText(draftText)[0];
+        if (!id) {
+          setError("Введите ID");
+          return;
+        }
         const res = await fetch(`/api/goldman-agency/${selectedId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ externalId: draftId }),
+          body: JSON.stringify({ externalId: id }),
         });
         const json = await res.json();
         if (!res.ok) {
@@ -129,35 +185,25 @@ export default function GoldmanAgencyPage() {
 
   return (
     <section className="ga-page">
-      {error && !modal ? <div className="ga-banner-error">{error}</div> : null}
-
-      <div className="ga-card">
-        <header className="ga-card-head">Goldman Agency</header>
-
-        <div className="ga-list" role="listbox" aria-label="Список ID мужчин">
-          {items.length === 0 ? (
-            <p className="ga-empty">Список пуст. Нажмите + чтобы добавить ID.</p>
-          ) : (
-            items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                role="option"
-                aria-selected={selectedId === item.id}
-                className={`ga-row${selectedId === item.id ? " is-selected" : ""}`}
-                onClick={() => setSelectedId(item.id)}
-              >
-                {item.externalId}
-              </button>
-            ))
-          )}
+      <div className="ga-panel">
+        <div className="ga-panel-head">
+          <h2>
+            Goldman Agency{" "}
+            <span className="ga-count">({items.length})</span>
+          </h2>
+          <p className="ga-sub">
+            Список мужских ID. Вставляйте столбиком — по одному на строку.
+          </p>
         </div>
 
-        <div className="ga-actions">
+        {error && !modal ? <div className="ga-banner-error">{error}</div> : null}
+        {okMsg && !modal ? <div className="ga-banner-ok">{okMsg}</div> : null}
+
+        <div className="ga-toolbar">
           <button
             type="button"
             className="ga-btn ga-btn-add"
-            title="Добавить"
+            title="Добавить ID"
             disabled={busy}
             onClick={openAdd}
           >
@@ -189,35 +235,75 @@ export default function GoldmanAgencyPage() {
           </button>
           <button
             type="button"
-            className="ga-btn ga-btn-send"
-            title="Скоро"
-            disabled
-            aria-disabled="true"
+            className="ga-btn ga-btn-export"
+            title="Все ID — посмотреть / копировать"
+            disabled={busy}
+            onClick={openExport}
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
             </svg>
           </button>
         </div>
+
+        <div className="ga-list" role="listbox" aria-label="Список ID мужчин">
+          {items.length === 0 ? (
+            <p className="ga-empty">
+              Список пуст. Нажмите + и вставьте ID столбиком.
+            </p>
+          ) : (
+            items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="option"
+                aria-selected={selectedId === item.id}
+                className={`ga-row${selectedId === item.id ? " is-selected" : ""}`}
+                onClick={() => setSelectedId(item.id)}
+              >
+                {item.externalId}
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
-      {modal ? (
+      {modal === "add" || modal === "edit" ? (
         <div className="ga-modal-backdrop" onClick={closeModal}>
           <form
             className="ga-modal"
             onClick={(e) => e.stopPropagation()}
             onSubmit={submitModal}
           >
-            <h2 className="ga-modal-title">Введите ID</h2>
-            <input
-              className="ga-modal-input"
-              value={draftId}
-              onChange={(e) => setDraftId(e.target.value.replace(/\D/g, ""))}
-              inputMode="numeric"
-              autoFocus
-              placeholder=""
-              disabled={busy}
-            />
+            <h2 className="ga-modal-title">
+              {modal === "add" ? "Введите ID" : "Изменить ID"}
+            </h2>
+            {modal === "add" ? (
+              <>
+                <p className="ga-modal-hint">
+                  Один ID или много — каждый с новой строки (можно вставить
+                  столбец из Excel).
+                </p>
+                <textarea
+                  className="ga-modal-textarea"
+                  value={draftText}
+                  onChange={(e) => setDraftText(e.target.value)}
+                  autoFocus
+                  rows={10}
+                  placeholder={"637048\n680186\n680200"}
+                  disabled={busy}
+                />
+              </>
+            ) : (
+              <input
+                className="ga-modal-input"
+                value={draftText}
+                onChange={(e) => setDraftText(e.target.value.replace(/\D/g, ""))}
+                inputMode="numeric"
+                autoFocus
+                disabled={busy}
+              />
+            )}
             {error ? <p className="ga-modal-error">{error}</p> : null}
             <div className="ga-modal-actions">
               <button
@@ -228,11 +314,52 @@ export default function GoldmanAgencyPage() {
               >
                 Отмена
               </button>
-              <button type="submit" className="ga-modal-ok" disabled={busy || !draftId}>
+              <button
+                type="submit"
+                className="ga-modal-ok"
+                disabled={busy || !draftText.trim()}
+              >
                 OK
               </button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {modal === "export" ? (
+        <div className="ga-modal-backdrop" onClick={closeModal}>
+          <div
+            className="ga-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h2 className="ga-modal-title">Все ID ({items.length})</h2>
+            <p className="ga-modal-hint">Можно скопировать весь список.</p>
+            <textarea
+              className="ga-modal-textarea"
+              value={exportText}
+              readOnly
+              rows={12}
+            />
+            <div className="ga-modal-actions">
+              <button
+                type="button"
+                className="ga-modal-cancel"
+                onClick={closeModal}
+              >
+                Закрыть
+              </button>
+              <button
+                type="button"
+                className="ga-modal-ok"
+                disabled={!items.length}
+                onClick={copyExport}
+              >
+                {copied ? "Скопировано" : "Копировать"}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
     </section>
