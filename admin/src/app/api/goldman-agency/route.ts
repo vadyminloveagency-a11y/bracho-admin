@@ -34,6 +34,14 @@ function parseIdList(raw: unknown): string[] {
   return out;
 }
 
+const itemSelect = {
+  id: true,
+  externalId: true,
+  isNew: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export async function GET(req: NextRequest) {
   try {
     const session = await readSession(req.headers.get("authorization"));
@@ -43,13 +51,8 @@ export async function GET(req: NextRequest) {
     await ensureSchema();
 
     const items = await prisma.goldmanManId.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        externalId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      orderBy: [{ isNew: "desc" }, { createdAt: "desc" }],
+      select: itemSelect,
     });
 
     return NextResponse.json({
@@ -65,13 +68,26 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await readSession();
-    requireDirector(session);
+    const session = await readSession(req.headers.get("authorization"));
+    if (!session || (session.role !== "DIRECTOR" && session.role !== "OPERATOR")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
     await ensureSchema();
 
     const body = await req.json();
+    const fromViewer =
+      body.source === "viewer" ||
+      body.autoCollect === true ||
+      body.fromViewer === true;
+
+    // Operators may only auto-collect payee IDs from Home toasts.
+    if (!fromViewer) {
+      requireDirector(session);
+    }
+
     const bulkRaw = body.ids ?? body.text ?? body.list;
     const bulk = bulkRaw !== undefined ? parseIdList(bulkRaw) : null;
+    const markNew = fromViewer || body.isNew === true;
 
     if (bulk && bulk.length > 0) {
       const invalid = bulk.filter((id) => !/^\d{1,32}$/.test(id));
@@ -91,20 +107,18 @@ export async function POST(req: NextRequest) {
 
       if (toCreate.length) {
         await prisma.goldmanManId.createMany({
-          data: toCreate.map((externalId) => ({ externalId })),
+          data: toCreate.map((externalId) => ({
+            externalId,
+            isNew: markNew,
+          })),
           skipDuplicates: true,
         });
       }
 
       const items = await prisma.goldmanManId.findMany({
         where: { externalId: { in: bulk } },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          externalId: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        orderBy: [{ isNew: "desc" }, { createdAt: "desc" }],
+        select: itemSelect,
       });
 
       return NextResponse.json({
@@ -121,20 +135,23 @@ export async function POST(req: NextRequest) {
       where: { externalId },
     });
     if (exists) {
+      if (fromViewer) {
+        return NextResponse.json({
+          ok: true,
+          added: 0,
+          skipped: 1,
+          item: exists,
+        });
+      }
       return NextResponse.json({ error: "Такой ID уже есть в списке" }, { status: 409 });
     }
 
     const item = await prisma.goldmanManId.create({
-      data: { externalId },
-      select: {
-        id: true,
-        externalId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      data: { externalId, isNew: markNew },
+      select: itemSelect,
     });
 
-    return NextResponse.json({ item }, { status: 201 });
+    return NextResponse.json({ item, added: 1, skipped: 0 }, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed";
     if (message === "FORBIDDEN") {

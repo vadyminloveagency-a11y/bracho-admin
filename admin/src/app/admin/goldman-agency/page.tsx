@@ -6,6 +6,7 @@ import "./goldman-agency.css";
 type ManItem = {
   id: string;
   externalId: string;
+  isNew?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -52,6 +53,16 @@ export default function GoldmanAgencyPage() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Pick up IDs auto-collected by operators' Home toasts.
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
+      load();
+    };
+    const t = window.setInterval(tick, 15_000);
+    return () => window.clearInterval(t);
   }, [load]);
 
   function openAdd() {
@@ -192,7 +203,8 @@ export default function GoldmanAgencyPage() {
             <span className="ga-count">({items.length})</span>
           </h2>
           <p className="ga-sub">
-            Список мужских ID. Вставляйте столбиком — по одному на строку.
+            Список мужских ID. Оранжевые — новые с Home (монета / replenished).
+            Клик снимает подсветку.
           </p>
         </div>
 
@@ -258,8 +270,24 @@ export default function GoldmanAgencyPage() {
                 type="button"
                 role="option"
                 aria-selected={selectedId === item.id}
-                className={`ga-row${selectedId === item.id ? " is-selected" : ""}`}
-                onClick={() => setSelectedId(item.id)}
+                className={`ga-row${selectedId === item.id ? " is-selected" : ""}${
+                  item.isNew ? " is-new" : ""
+                }`}
+                onClick={() => {
+                  setSelectedId(item.id);
+                  if (item.isNew) {
+                    setItems((prev) =>
+                      prev.map((row) =>
+                        row.id === item.id ? { ...row, isNew: false } : row,
+                      ),
+                    );
+                    fetch(`/api/goldman-agency/${item.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ isNew: false }),
+                    }).catch(() => {});
+                  }
+                }}
               >
                 {item.externalId}
               </button>

@@ -97,6 +97,7 @@ export async function ensureSchema() {
       CREATE TABLE IF NOT EXISTS "GoldmanManId" (
         "id" TEXT NOT NULL,
         "externalId" TEXT NOT NULL,
+        "isNew" BOOLEAN NOT NULL DEFAULT false,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT "GoldmanManId_pkey" PRIMARY KEY ("id")
@@ -105,6 +106,13 @@ export async function ensureSchema() {
     await prisma.$executeRawUnsafe(`
       CREATE UNIQUE INDEX IF NOT EXISTS "GoldmanManId_externalId_key"
       ON "GoldmanManId"("externalId")
+    `);
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "GoldmanManId" ADD COLUMN IF NOT EXISTS "isNew" BOOLEAN NOT NULL DEFAULT false
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "GoldmanManId_isNew_createdAt_idx"
+      ON "GoldmanManId"("isNew", "createdAt")
     `);
   } catch {
     // ignore

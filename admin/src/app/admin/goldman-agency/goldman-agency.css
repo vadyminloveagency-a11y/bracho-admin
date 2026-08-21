@@ -167,10 +167,26 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.ga-row.is-new {
+  border-color: rgba(255, 140, 0, 0.55);
+  background: rgba(255, 140, 0, 0.28);
+  color: #ffe0b8;
+}
+
+.ga-row.is-new:hover {
+  background: rgba(255, 140, 0, 0.36);
+}
+
 .ga-row.is-selected {
   border-color: rgba(255, 43, 58, 0.45);
   background: rgba(255, 43, 58, 0.1);
   color: #ffd0d5;
+}
+
+.ga-row.is-new.is-selected {
+  border-color: rgba(255, 140, 0, 0.75);
+  background: rgba(255, 140, 0, 0.4);
+  color: #fff0d6;
 }
 
 .ga-modal-backdrop {

@@ -21,26 +21,43 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
     const { id } = await ctx.params;
     const body = await req.json();
-    const externalId = idSchema.parse(String(body.externalId ?? body.id ?? "").trim());
 
     const current = await prisma.goldmanManId.findUnique({ where: { id } });
     if (!current) {
       return NextResponse.json({ error: "Не найдено" }, { status: 404 });
     }
 
-    const clash = await prisma.goldmanManId.findFirst({
-      where: { externalId, NOT: { id } },
-    });
-    if (clash) {
-      return NextResponse.json({ error: "Такой ID уже есть в списке" }, { status: 409 });
+    const data: { externalId?: string; isNew?: boolean } = {};
+
+    if (body.externalId != null || body.id != null) {
+      const externalId = idSchema.parse(
+        String(body.externalId ?? body.id ?? "").trim(),
+      );
+      const clash = await prisma.goldmanManId.findFirst({
+        where: { externalId, NOT: { id } },
+      });
+      if (clash) {
+        return NextResponse.json({ error: "Такой ID уже есть в списке" }, { status: 409 });
+      }
+      data.externalId = externalId;
+      data.isNew = false;
+    }
+
+    if (typeof body.isNew === "boolean") {
+      data.isNew = body.isNew;
+    }
+
+    if (!Object.keys(data).length) {
+      return NextResponse.json({ error: "Нечего обновлять" }, { status: 400 });
     }
 
     const item = await prisma.goldmanManId.update({
       where: { id },
-      data: { externalId },
+      data,
       select: {
         id: true,
         externalId: true,
+        isNew: true,
         createdAt: true,
         updatedAt: true,
       },

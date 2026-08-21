@@ -10,6 +10,11 @@ app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
 const api = require("./lib/api");
 const { readConfig, writeConfig, apiBase } = require("./lib/config");
 const { hideBroadcastUiScript } = require("./lib/golden-broadcast-hide");
+const { highlightMarkedIdsScript } = require("./lib/golden-highlighter");
+const {
+  viewerCollectInstallScript,
+  viewerCollectDrainScript,
+} = require("./lib/golden-viewer-collect");
 
 const GOLDEN_HOST = "https://goldenbride.net";
 const BAR_H = 48;
@@ -85,6 +90,133 @@ const presenceTimers = new Map();
 let activeTabKey = null;
 let loginQueueBusy = false;
 const PRESENCE_INTERVAL_MS = 30_000;
+const GOLDMAN_REFRESH_MS = 90_000;
+const VIEWER_COLLECT_MS = 8_000;
+
+let goldmanIdsCache = { ids: [], fetchedAt: 0 };
+let goldmanRefreshTimer = null;
+let viewerCollectTimer = null;
+/** IDs already pushed this session (avoid re-POSTing known skips every tick). */
+const viewerPushedIds = new Set();
+
+async function getGoldmanManIds(force = false) {
+  const age = Date.now() - goldmanIdsCache.fetchedAt;
+  if (!force && goldmanIdsCache.fetchedAt && age < 20_000) {
+    return goldmanIdsCache.ids;
+  }
+  const ids = await api.fetchGoldmanManIds();
+  goldmanIdsCache = { ids, fetchedAt: Date.now() };
+  return ids;
+}
+
+async function applyGoldmanHighlights(view) {
+  if (!view || view.webContents.isDestroyed()) return;
+  try {
+    const url = view.webContents.getURL() || "";
+    if (!/\/chat/i.test(url)) return;
+  } catch (_) {
+    return;
+  }
+  try {
+    const ids = await getGoldmanManIds(false);
+    if (!ids.length) {
+      console.warn("[bracho] Goldman Agency list empty or API failed");
+    } else {
+      console.log("[bracho] Goldman coins for", ids.length, "ids");
+    }
+    await view.webContents.executeJavaScript(highlightMarkedIdsScript(ids), true);
+  } catch (e) {
+    console.warn("[bracho] applyGoldmanHighlights failed", e?.message || e);
+  }
+}
+
+async function refreshGoldmanHighlightsAll(force = false) {
+  try {
+    await getGoldmanManIds(force);
+  } catch (_) {}
+  for (const s of ladies.values()) {
+    await applyGoldmanHighlights(s.chat);
+  }
+}
+
+function startGoldmanRefreshLoop() {
+  if (goldmanRefreshTimer) return;
+  goldmanRefreshTimer = setInterval(() => {
+    refreshGoldmanHighlightsAll(true).catch(() => {});
+  }, GOLDMAN_REFRESH_MS);
+}
+
+async function installViewerCollect(view) {
+  if (!view || view.webContents.isDestroyed()) return;
+  try {
+    const url = view.webContents.getURL() || "";
+    if (!/\/lady/i.test(url)) return;
+  } catch (_) {
+    return;
+  }
+  try {
+    await view.webContents.executeJavaScript(viewerCollectInstallScript(), true);
+  } catch (e) {
+    console.warn("[bracho] viewer collect install failed", e?.message || e);
+  }
+}
+
+async function harvestViewerPayeesFromHomes() {
+  const found = [];
+  for (const s of ladies.values()) {
+    const home = s.home;
+    if (!home || home.webContents.isDestroyed()) continue;
+    try {
+      const url = home.webContents.getURL() || "";
+      if (!/\/lady/i.test(url)) continue;
+    } catch (_) {
+      continue;
+    }
+    try {
+      await home.webContents.executeJavaScript(viewerCollectInstallScript(), true);
+      const ids = await home.webContents.executeJavaScript(
+        viewerCollectDrainScript(),
+        true,
+      );
+      if (Array.isArray(ids)) {
+        for (const id of ids) {
+          const sId = String(id || "").trim();
+          if (/^\d{3,12}$/.test(sId)) found.push(sId);
+        }
+      }
+    } catch (e) {
+      console.warn("[bracho] viewer harvest failed", e?.message || e);
+    }
+  }
+  return [...new Set(found)];
+}
+
+async function syncViewerPayeesToGoldman() {
+  const found = await harvestViewerPayeesFromHomes();
+  const fresh = found.filter((id) => !viewerPushedIds.has(id));
+  if (!fresh.length) return;
+  for (const id of fresh) viewerPushedIds.add(id);
+  const result = await api.pushGoldmanViewerIds(fresh);
+  if (result.ok && result.added > 0) {
+    console.log(
+      "[bracho] Goldman viewer payees added:",
+      result.added,
+      "skipped:",
+      result.skipped,
+    );
+    // Refresh chat coins so new IDs get badges soon.
+    refreshGoldmanHighlightsAll(true).catch(() => {});
+  } else if (result.ok && result.skipped > 0) {
+    console.log("[bracho] Goldman viewer payees already known:", result.skipped);
+  }
+}
+
+function startViewerCollectLoop() {
+  if (viewerCollectTimer) return;
+  viewerCollectTimer = setInterval(() => {
+    syncViewerPayeesToGoldman().catch(() => {});
+  }, VIEWER_COLLECT_MS);
+}
 
 function anketaDbId(anketa) {
   return String(anketa?.id || "").trim() || null;
@@ -424,6 +556,9 @@ function selectTab(key) {
   layoutActiveView();
   scheduleLayoutFix();
   pushWorkspace();
+  if (page === "chat") {
+    applyGoldmanHighlights(view).catch(() => {});
+  }
   return true;
 }
 
@@ -619,6 +754,11 @@ function makeView(partition) {
     view.webContents
       .executeJavaScript(hideBroadcastUiScript(), true)
       .catch(() => {});
+    // Wait until chat UI mounts — avoid hammering DOM on first paint.
+    setTimeout(() => {
+      applyGoldmanHighlights(view).catch(() => {});
+      installViewerCollect(view).catch(() => {});
+    }, 2500);
   });
   return view;
 }
@@ -685,6 +825,9 @@ async function loginChat(view, anketa) {
   await new Promise((r) => setTimeout(r, 600));
   await waitUntilChatReady(wc);
   keepWorkWindowHidden();
+  await applyGoldmanHighlights(view);
+  startGoldmanRefreshLoop();
+  startViewerCollectLoop();
 }
 
 async function openLadySession(anketa, opts = {}) {
@@ -825,6 +968,13 @@ async function openHomeForLady(ladyId, opts = {}) {
   } else {
     pushWorkspace();
   }
+  try {
+    if (session.home) {
+      await installViewerCollect(session.home);
+      startViewerCollectLoop();
+      syncViewerPayeesToGoldman().catch(() => {});
+    }
+  } catch (_) {}
   return { ok: true, reused };
 }
 
