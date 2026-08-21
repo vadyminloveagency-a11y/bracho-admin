@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { readSession, requireDirector } from "@/lib/auth";
 import { encryptSecret } from "@/lib/secret";
+import { ensureSchema } from "@/lib/ensure-schema";
 
 const ONLINE_MS = 90_000;
 
@@ -19,6 +20,7 @@ export async function GET() {
   try {
     const session = await readSession();
     requireDirector(session);
+    await ensureSchema();
 
     const since = new Date(Date.now() - ONLINE_MS);
     const [accounts, operators, online] = await Promise.all([
