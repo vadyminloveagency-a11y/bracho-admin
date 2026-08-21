@@ -48,7 +48,7 @@ type Snapshot = {
   };
 };
 
-type ModalKind = "account" | "operator-create" | "operator-edit" | null;
+type ModalKind = "account" | "account-edit" | "operator-create" | "operator-edit" | null;
 
 function initials(name: string) {
   const parts = String(name || "")
@@ -116,6 +116,7 @@ export default function AccountManagerPage() {
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalKind>(null);
   const [editOp, setEditOp] = useState<Operator | null>(null);
+  const [editAcc, setEditAcc] = useState<Account | null>(null);
 
   const [opName, setOpName] = useState("");
   const [opEmail, setOpEmail] = useState("");
@@ -151,6 +152,7 @@ export default function AccountManagerPage() {
   function closeModal() {
     setModal(null);
     setEditOp(null);
+    setEditAcc(null);
     setOpName("");
     setOpEmail("");
     setOpPassword("");
@@ -160,10 +162,19 @@ export default function AccountManagerPage() {
   }
 
   function openCreateAccount() {
+    setEditAcc(null);
     setAccName("");
     setAccExternalId("");
     setAccPassword("");
     setModal("account");
+  }
+
+  function openEditAccount(acc: Account) {
+    setEditAcc(acc);
+    setAccName(acc.displayName);
+    setAccExternalId(acc.externalId);
+    setAccPassword("");
+    setModal("account-edit");
   }
 
   function openCreateOperator() {
@@ -275,6 +286,54 @@ export default function AccountManagerPage() {
       const json = await res.json();
       if (!res.ok) {
         setError(json.error || "Could not create questionnaire");
+        return;
+      }
+      closeModal();
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveAccount(e: FormEvent) {
+    e.preventDefault();
+    if (!editAcc) return;
+    setBusy(true);
+    setError("");
+    try {
+      const body: Record<string, string> = {
+        displayName: accName,
+        externalId: accExternalId,
+      };
+      if (accPassword.trim()) body.password = accPassword.trim();
+
+      const res = await fetch(`/api/ankety/${editAcc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error || "Could not update lady");
+        return;
+      }
+      closeModal();
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteAccount() {
+    if (!editAcc) return;
+    if (!window.confirm(`Delete lady ${editAcc.displayName}?`)) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/ankety/${editAcc.id}`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.error || "Could not delete lady");
         return;
       }
       closeModal();
@@ -420,6 +479,17 @@ export default function AccountManagerPage() {
                     <p className="account-name">{a.displayName}</p>
                     <p className="account-sub">ID {a.externalId}</p>
                   </div>
+                  <button
+                    type="button"
+                    className="account-edit-btn"
+                    title="Edit lady"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditAccount(a);
+                    }}
+                  >
+                    <PencilIcon />
+                  </button>
                 </div>
               ))
             )}
@@ -503,6 +573,17 @@ export default function AccountManagerPage() {
                               <p className="account-name">{a.displayName}</p>
                               <p className="account-sub">ID {a.externalId}</p>
                             </div>
+                            <button
+                              type="button"
+                              className="linked-edit"
+                              title="Edit lady"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditAccount(a);
+                              }}
+                            >
+                              <PencilIcon />
+                            </button>
                           </div>
                         ))
                       )}
@@ -591,7 +672,7 @@ export default function AccountManagerPage() {
             {error ? <div className="status-error">{error}</div> : null}
             <div className="form-grid">
               <input
-                placeholder="Display name"
+                placeholder="Lady name"
                 value={accName}
                 onChange={(e) => setAccName(e.target.value)}
                 required
@@ -613,6 +694,65 @@ export default function AccountManagerPage() {
             </div>
             <button type="submit" className="btn-submit" disabled={busy}>
               Submit
+            </button>
+          </form>
+        </div>
+      ) : null}
+
+      {modal === "account-edit" && editAcc ? (
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
+        >
+          <form className="modal-card create-modal" onSubmit={saveAccount}>
+            <div className="create-modal-head">
+              <h3 className="modal-title">Edit Lady</h3>
+              <button
+                type="button"
+                className="modal-close"
+                aria-label="Close"
+                onClick={closeModal}
+              >
+                ×
+              </button>
+            </div>
+            {error ? <div className="status-error">{error}</div> : null}
+            <p className="modal-hint">Leave password empty to keep the current one.</p>
+            <div className="form-grid">
+              <input
+                placeholder="Lady name"
+                value={accName}
+                onChange={(e) => setAccName(e.target.value)}
+                required
+                autoFocus
+              />
+              <input
+                placeholder="Golden ID"
+                value={accExternalId}
+                onChange={(e) => setAccExternalId(e.target.value)}
+                required
+              />
+              <input
+                placeholder="New Golden password (optional)"
+                type="password"
+                value={accPassword}
+                onChange={(e) => setAccPassword(e.target.value)}
+              />
+            </div>
+            <button type="submit" className="btn-submit" disabled={busy}>
+              Save
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              disabled={busy}
+              onClick={deleteAccount}
+            >
+              Delete lady
             </button>
           </form>
         </div>
