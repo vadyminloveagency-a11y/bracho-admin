@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="42%" r="56%">
+      <stop offset="0%" stop-color="#ff2b3a" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#ff2b3a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bubble" x1="32%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#ff5a66"/>
+      <stop offset="48%" stop-color="#ff2b3a"/>
+      <stop offset="100%" stop-color="#d41424"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="#141210"/>
+  <rect width="1024" height="1024" rx="228" fill="url(#glow)"/>
+  <path
+    fill="url(#bubble)"
+    d="M292 176h440a132 132 0 0 1 132 132v248a132 132 0 0 1-132 132H456c-32 0-54 14-70 46-24 48-54 104-102 140-20 16-50 4-44-24 12-56 28-112 34-144 6-26-8-40-34-40H292a132 132 0 0 1-132-132V308a132 132 0 0 1 132-132z"
+  />
+  <ellipse cx="512" cy="292" rx="210" ry="64" fill="#fff" opacity="0.14"/>
+  
+  <circle cx="372" cy="430" r="44" fill="#ede9e4"/>
+  <circle cx="512" cy="430" r="44" fill="#ede9e4"/>
+  <circle cx="652" cy="430" r="44" fill="#ede9e4"/>
+</svg>

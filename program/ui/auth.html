@@ -1,38 +1,94 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Bracho</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="auth.css" />
 </head>
-<body>
-  <main class="shell">
-    <header>
-      <p class="brand">Bracho</p>
-      <p class="sub" id="subtitle">Вход оператора</p>
-    </header>
+<body class="auth-locked">
+  <div id="app-auth-gate" class="app-auth-gate" aria-label="Bracho sign in">
+    <div id="app-auth-bg-pattern" class="auth-bg-pattern" aria-hidden="true"></div>
+    <div class="app-auth-gate-inner">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1 class="auth-title">Bracho</h1>
+          <p class="auth-hint">Operator office</p>
+        </div>
+        <form id="auth-form" class="auth-form">
+          <div class="auth-field">
+            <div class="auth-field-control">
+              <input id="auth-email" type="text" autocomplete="username" placeholder=" " required />
+              <label for="auth-email">Login</label>
+            </div>
+          </div>
+          <div class="auth-field auth-field--password">
+            <div class="auth-field-control">
+              <input
+                id="auth-password"
+                type="password"
+                autocomplete="current-password"
+                minlength="6"
+                placeholder=" "
+                required
+              />
+              <label for="auth-password">Password</label>
+              <button
+                type="button"
+                id="auth-toggle-password"
+                class="auth-eye"
+                aria-label="Show password"
+                aria-pressed="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <label class="auth-remember" for="auth-remember">
+            <input type="checkbox" id="auth-remember" />
+            <span>Remember login and password</span>
+          </label>
+          <button type="submit" id="auth-submit-btn" class="auth-submit">Login</button>
+        </form>
+        <p id="auth-status" class="auth-status" aria-live="polite"></p>
+        <p class="auth-no-account">Have no account? Ask your director to create a new one.</p>
+      </div>
+    </div>
+  </div>
 
-    <section id="view-login" class="card">
-      <label>Email
-        <input id="email" type="email" autocomplete="username" placeholder="operator@agency.com" />
-      </label>
-      <label>Пароль
-        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
-      </label>
-      <button id="btn-login" type="button">Войти</button>
-      <p class="hint">API: <span id="api-base"></span></p>
-      <p class="error" id="login-error" hidden></p>
-    </section>
+  <div id="agency-profile-picker" class="agency-profile-picker is-hidden" hidden>
+    <div id="agency-profile-bg-pattern" class="auth-bg-pattern" aria-hidden="true"></div>
+    <div class="agency-profile-picker-card" role="dialog" aria-modal="true" aria-labelledby="agency-profile-picker-title">
+      <h2 id="agency-profile-picker-title" class="agency-profile-picker-title">Choose a lady</h2>
+      <p class="agency-profile-picker-sub">Select one or more questionnaires, then login.</p>
+      <div id="agency-profile-picker-list" class="agency-profile-picker-list"></div>
+      <p id="picker-error" class="picker-error" aria-live="polite"></p>
+      <button type="button" id="agency-profile-picker-login" class="agency-profile-picker-login" disabled>
+        Login selected
+      </button>
+      <button type="button" id="agency-profile-picker-cancel" class="agency-profile-picker-cancel">Cancel</button>
+      <button type="button" id="agency-profile-picker-back" class="agency-profile-picker-cancel is-hidden" hidden>Back to chats</button>
+    </div>
+  </div>
 
-    <section id="view-ankety" class="card" hidden>
-      <p class="who" id="who"></p>
-      <p class="pick">Выберите анкету</p>
-      <div id="ankety-list" class="list"></div>
-      <button id="btn-logout" type="button" class="ghost">Выйти</button>
-      <p class="error" id="ankety-error" hidden></p>
-    </section>
-  </main>
+  <div id="app-connecting-overlay" class="app-connecting-overlay is-hidden" hidden aria-live="polite">
+    <div id="app-connecting-bg-pattern" class="auth-bg-pattern" aria-hidden="true"></div>
+    <div class="app-connecting-card">
+      <p class="app-connecting-label" id="connecting-label">
+        Login to the lady<span class="loading-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+      </p>
+      <p class="app-connecting-sub" id="connecting-sub"></p>
+      <ol class="app-connecting-log" id="connecting-log"></ol>
+    </div>
+  </div>
+
   <script src="auth.js"></script>
 </body>
 </html>

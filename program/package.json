@@ -3,12 +3,61 @@
   "version": "0.1.0",
   "private": true,
   "description": "Bracho operator program — Golden Bride chat login via assigned ankety",
+  "author": "Bracho",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron ."
+    "start": "electron . --remote-debugging-port=9222",
+    "dev": "electron . --remote-debugging-port=9222",
+    "dist": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable"
   },
   "devDependencies": {
-    "electron": "^37.2.0"
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.bracho.program",
+    "productName": "Bracho",
+    "copyright": "Copyright © Bracho",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-bar.js",
+      "preload-golden.js",
+      "lib/**/*",
+      "ui/**/*",
+      "assets/icon.ico",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        },
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "Bracho-${version}-${os}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Bracho.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Bracho",
+      "artifactName": "Bracho-Setup-${version}.exe"
+    }
   }
 }

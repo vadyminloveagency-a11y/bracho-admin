@@ -4,4 +4,5 @@ if not exist node_modules (
   echo Installing dependencies...
   call npm install
 )
-npm start
+echo Starting Bracho (debug port 9222)...
+call npx electron . --remote-debugging-port=9222

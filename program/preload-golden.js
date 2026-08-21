@@ -1,0 +1,43 @@
+/**
+ * Preload for Golden Bride BrowserViews.
+ * contextIsolation is false so page patches apply.
+ */
+
+/** Golden pages sleep hidden tabs. Stay "visible". */
+function keepPageVisible() {
+  try {
+    Object.defineProperty(Document.prototype, "hidden", {
+      configurable: true,
+      get() {
+        return false;
+      },
+    });
+    Object.defineProperty(Document.prototype, "visibilityState", {
+      configurable: true,
+      get() {
+        return "visible";
+      },
+    });
+  } catch (_) {
+    try {
+      Object.defineProperty(document, "hidden", {
+        configurable: true,
+        get: () => false,
+      });
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => "visible",
+      });
+    } catch (_) {}
+  }
+}
+
+keepPageVisible();
+window.addEventListener("DOMContentLoaded", keepPageVisible, true);
+document.addEventListener(
+  "visibilitychange",
+  (e) => {
+    e.stopImmediatePropagation();
+  },
+  true,
+);

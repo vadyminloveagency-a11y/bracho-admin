@@ -27,8 +27,51 @@ async function fetchMyAnkety() {
   return data;
 }
 
+async function presenceHeartbeat(anketaId) {
+  const { token } = readConfig();
+  const id = String(anketaId || "").trim();
+  if (!token || !id) return { ok: false };
+  try {
+    const res = await fetch(`${apiBase()}/api/presence`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ anketaId: id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, ...data };
+  } catch (e) {
+    return { ok: false, error: e?.message || "presence failed" };
+  }
+}
+
+async function presenceClear(anketaId) {
+  const { token } = readConfig();
+  if (!token) return { ok: false };
+  try {
+    const q = anketaId
+      ? `?anketaId=${encodeURIComponent(String(anketaId))}`
+      : "";
+    const res = await fetch(`${apiBase()}/api/presence${q}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return { ok: res.ok };
+  } catch (e) {
+    return { ok: false, error: e?.message || "presence clear failed" };
+  }
+}
+
 function logout() {
   writeConfig({ token: null, user: null });
 }
 
-module.exports = { login, fetchMyAnkety, logout };
+module.exports = {
+  login,
+  fetchMyAnkety,
+  logout,
+  presenceHeartbeat,
+  presenceClear,
+};

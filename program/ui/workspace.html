@@ -1,41 +1,296 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Bracho workspace</title>
+  <title>Bracho</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Varela+Round&display=swap" rel="stylesheet" />
   <style>
-    html, body { margin: 0; height: 100%; background: #12110f; color: #f3efe6; font-family: "Segoe UI", Georgia, serif; }
+    :root {
+      --font: "Varela Round", "Segoe UI", Arial, sans-serif;
+      --bg: #0d0a0b;
+      --line: rgba(255, 43, 58, 0.28);
+      --text: #f8fbff;
+      --muted: #98a1aa;
+      --accent: #ff2b3a;
+      --accent-strong: #ff4757;
+      --bar-h: 48px;
+    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+    }
     .bar {
-      height: 56px;
+      position: relative;
+      z-index: 3;
+      height: var(--bar-h);
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      border-bottom: 1px solid #2e2b26;
-      background: linear-gradient(90deg, #1c1a17, #241c16);
+      gap: 8px;
+      padding: 0 10px 0 8px;
+      border-bottom: 1px solid var(--line);
+      background: #140a0c;
     }
-    .title { font-size: 15px; }
-    .title span { color: #9a9286; margin-left: 8px; font-size: 13px; }
-    button {
-      border: 1px solid #2e2b26;
+    .tabs {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      min-width: 0;
+      padding: 6px 0;
+    }
+    .tabs::-webkit-scrollbar { height: 0; }
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 220px;
+      min-width: 88px;
+      height: 32px;
+      padding: 0 6px 0 10px;
+      border: 1px solid var(--lady-border, rgba(78, 98, 108, 0.45));
+      border-left: 3px solid var(--lady-color, rgba(78, 98, 108, 0.7));
+      border-radius: 8px;
+      background: var(--lady-bg, rgba(13, 19, 23, 0.72));
+      color: var(--text);
+      cursor: pointer;
+      font: 600 12px/1.2 var(--font);
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .tab:hover { border-color: var(--lady-color, rgba(255, 43, 58, 0.55)); }
+    .tab.is-active {
+      border-color: var(--lady-color, rgba(255, 43, 58, 0.7));
+      background: var(--lady-bg-active, rgba(255, 43, 58, 0.5));
+      color: #fff;
+    }
+    .tab.is-active .tab-meta { color: rgba(255, 255, 255, 0.82); }
+    .tab-name { overflow: hidden; text-overflow: ellipsis; }
+    .tab-meta { color: var(--muted); font-weight: 500; font-size: 10px; }
+    .tab-close {
+      width: 22px; height: 22px; border: 0; border-radius: 6px;
+      background: transparent; color: var(--muted); cursor: pointer;
+      font: 700 14px/1 var(--font); padding: 0; flex: 0 0 auto;
+    }
+    .tab-close:hover { background: rgba(255, 43, 58, 0.18); color: #fff; }
+    .actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+    .btn {
+      height: 32px; padding: 0 12px; border-radius: 8px;
+      border: 1px solid rgba(255, 43, 58, 0.45); background: #140a0c;
+      color: #fff; font: 700 12px/1 var(--font); cursor: pointer;
+    }
+    .btn:hover:not(:disabled) {
+      background: rgba(255, 43, 58, 0.12);
+      border-color: rgba(255, 43, 58, 0.75);
+    }
+    .btn:disabled { opacity: 0.45; cursor: wait; }
+    .btn-add {
+      border-color: rgba(255, 43, 58, 0.7); color: var(--accent);
+      background: transparent; min-width: 32px; padding: 0 10px;
+      font-size: 18px; font-weight: 800;
+    }
+    .zoom-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      height: 32px;
+      padding: 0 2px;
+      border: 1px solid rgba(255, 43, 58, 0.35);
+      border-radius: 8px;
+      background: rgba(13, 19, 23, 0.55);
+    }
+    .zoom-group .btn {
+      min-width: 28px;
+      padding: 0 8px;
+      border: 0;
       background: transparent;
-      color: #f3efe6;
-      padding: 8px 12px;
+    }
+    .zoom-label {
+      min-width: 44px;
+      text-align: center;
+      font: 700 11px/1 var(--font);
+      color: var(--muted);
       cursor: pointer;
     }
+    .loader {
+      position: fixed; left: 0; right: 0; top: var(--bar-h); bottom: 0;
+      z-index: 4; display: flex; align-items: center; justify-content: center;
+      overflow: hidden; background: #141210; opacity: 0; pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .loader.is-on { opacity: 1; pointer-events: auto; }
+    .loader::after {
+      content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(255, 43, 58, 0.08), transparent 46%),
+        rgba(5, 8, 12, 0.28);
+    }
+    .loader::before {
+      content: ""; position: absolute; left: 50%; top: 46%; width: 56vmax; height: 56vmax;
+      z-index: 1; border-radius: 50%; pointer-events: none;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle at 50% 50%, rgba(255, 43, 58, 0.42) 0%, rgba(255, 71, 87, 0.22) 28%, rgba(255, 43, 58, 0.08) 52%, transparent 70%);
+      filter: blur(44px); opacity: 0.85;
+      animation: authAmbientPulse 6.5s ease-in-out infinite;
+    }
+    @keyframes authAmbientPulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(0.86); opacity: 0.55; }
+      50% { transform: translate(-50%, -50%) scale(1.14); opacity: 1; }
+    }
+    .loader-center { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    .loader-ring {
+      width: 52px; height: 52px;
+      border: 3.5px solid rgba(255, 43, 58, 0.14);
+      border-top-color: var(--accent-strong); border-radius: 50%;
+      animation: auth-session-spin 0.85s linear infinite;
+      box-shadow: 0 0 28px rgba(255, 43, 58, 0.12);
+    }
+    @keyframes auth-session-spin { to { transform: rotate(360deg); } }
+    .loader-title { margin: 0; color: #f8fbff; font: 700 18px/1.2 var(--font); }
+    .loader-msg { margin: 0; color: #98a1aa; font-size: 12px; text-align: center; min-height: 1.2em; }
   </style>
 </head>
 <body>
   <div class="bar">
-    <div class="title" id="title">Bracho</div>
-    <button type="button" id="back">Сменить анкету</button>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="actions">
+      <button type="button" class="btn btn-add" id="add" title="Add lady">+</button>
+      <div class="zoom-group" title="Zoom Golden pages">
+        <button type="button" class="btn" id="zoom-out" title="Zoom out">−</button>
+        <span class="zoom-label" id="zoom-label">100%</span>
+        <button type="button" class="btn" id="zoom-in" title="Zoom in">+</button>
+      </div>
+      <button type="button" class="btn" id="reload" title="Reload current tab">Reload</button>
+      <button type="button" class="btn" id="exit">Exit</button>
+    </div>
   </div>
+
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader-center">
+      <div class="loader-ring" aria-hidden="true"></div>
+      <p class="loader-title">Bracho</p>
+      <p class="loader-msg" id="loader-msg"></p>
+    </div>
+  </div>
+
   <script>
-    const q = new URLSearchParams(location.search);
-    document.getElementById("title").innerHTML =
-      (q.get("name") || "Anketa") +
-      '<span>ID ' + (q.get("id") || "") + " · Golden Bride</span>";
-    document.getElementById("back").onclick = () => window.brachoBar.back();
+    const tabsEl = document.getElementById("tabs");
+    const loader = document.getElementById("loader");
+    const loaderMsg = document.getElementById("loader-msg");
+    const zoomLabel = document.getElementById("zoom-label");
+
+    let loading = false;
+
+    function escapeHtml(s) {
+      return String(s || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function withAlpha(hex, a) {
+      const h = String(hex || "").replace("#", "");
+      if (h.length !== 6) return "";
+      const n = parseInt(h, 16);
+      if (!Number.isFinite(n)) return "";
+      const r = (n >> 16) & 255;
+      const g = (n >> 8) & 255;
+      const b = n & 255;
+      return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+    }
+
+    function setZoomLabel(zoom) {
+      zoomLabel.textContent = Math.round(Number(zoom) * 100) + "%";
+    }
+
+    function setLoading(on, message) {
+      loading = Boolean(on);
+      loader.classList.toggle("is-on", loading);
+      loader.setAttribute("aria-hidden", loading ? "false" : "true");
+      loaderMsg.textContent = message || "";
+      document.getElementById("add").disabled = loading;
+      document.getElementById("reload").disabled = loading;
+      document.getElementById("exit").disabled = loading;
+      document.getElementById("zoom-out").disabled = loading;
+      document.getElementById("zoom-in").disabled = loading;
+    }
+
+    function renderTabs(state) {
+      const list = state?.tabs || [];
+      tabsEl.innerHTML = "";
+      for (const t of list) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tab" + (t.active ? " is-active" : "");
+        btn.disabled = loading;
+        if (t.color) {
+          btn.style.setProperty("--lady-color", t.color);
+          btn.style.setProperty("--lady-border", withAlpha(t.color, 0.55) || t.color);
+          btn.style.setProperty("--lady-bg", withAlpha(t.color, 0.08) || "");
+          btn.style.setProperty("--lady-bg-active", withAlpha(t.color, 0.55) || "");
+        }
+        btn.innerHTML =
+          '<span class="tab-name">' + escapeHtml(t.label) + "</span>" +
+          (t.meta ? '<span class="tab-meta">' + escapeHtml(t.meta) + "</span>" : "") +
+          '<span class="tab-close" data-close="' + escapeHtml(t.key) + '" title="Close">×</span>';
+        btn.addEventListener("click", (e) => {
+          if (loading) return;
+          const close = e.target.closest("[data-close]");
+          if (close) {
+            e.stopPropagation();
+            window.brachoBar.closeTab(close.getAttribute("data-close"));
+            return;
+          }
+          window.brachoBar.selectTab(t.key);
+        });
+        tabsEl.appendChild(btn);
+      }
+    }
+
+    function renderState(state) {
+      renderTabs(state);
+      if (typeof state?.zoom === "number") setZoomLabel(state.zoom);
+    }
+
+    document.getElementById("add").onclick = () => {
+      if (!loading) window.brachoBar.addLady();
+    };
+    document.getElementById("reload").onclick = () => {
+      if (!loading) window.brachoBar.reloadTab();
+    };
+    document.getElementById("zoom-out").onclick = async () => {
+      const res = await window.brachoBar.zoomBy(-0.1);
+      if (typeof res?.zoom === "number") setZoomLabel(res.zoom);
+    };
+    document.getElementById("zoom-in").onclick = async () => {
+      const res = await window.brachoBar.zoomBy(0.1);
+      if (typeof res?.zoom === "number") setZoomLabel(res.zoom);
+    };
+    zoomLabel.ondblclick = async () => {
+      const res = await window.brachoBar.zoomSet(1);
+      if (typeof res?.zoom === "number") setZoomLabel(res.zoom);
+    };
+    document.getElementById("exit").onclick = () => {
+      if (!loading) window.brachoBar.exit();
+    };
+
+    window.brachoBar.onState((state) => renderState(state));
+    window.brachoBar.onZoom((payload) => {
+      if (typeof payload?.zoom === "number") setZoomLabel(payload.zoom);
+    });
+    window.brachoBar.onLoading((payload) => {
+      setLoading(Boolean(payload?.on), payload?.message || "");
+    });
+    window.brachoBar.getState().then(renderState);
   </script>
 </body>
 </html>

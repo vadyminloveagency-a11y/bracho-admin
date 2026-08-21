@@ -23,6 +23,8 @@ model User {
   createdById String?
   createdBy   User?   @relation("CreatedOperators", fields: [createdById], references: [id])
   operators   User[]  @relation("CreatedOperators")
+
+  presence AnketaPresence[]
 }
 
 model Anketa {
@@ -32,15 +34,32 @@ model Anketa {
   /// Shown name in admin (e.g. Valentina)
   displayName String
   /// Encrypted Golden Bride password for this anketa
-  passwordEnc String @default("")
+  passwordEnc String  @default("")
   site        String   @default("goldenbride")
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  operatorId String
-  operator   User   @relation("OperatorAnkety", fields: [operatorId], references: [id], onDelete: Cascade)
+  /// Null = unassigned pool (Account Manager left column)
+  operatorId String?
+  operator   User?   @relation("OperatorAnkety", fields: [operatorId], references: [id], onDelete: SetNull)
+
+  presence AnketaPresence?
 
   @@unique([site, externalId])
+  @@index([operatorId])
+}
+
+/// Live "online" when an operator has this questionnaire open in Bracho.
+model AnketaPresence {
+  anketaId     String   @id
+  anketa       Anketa   @relation(fields: [anketaId], references: [id], onDelete: Cascade)
+  operatorId   String
+  operator     User     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  externalId   String
+  displayName  String
+  lastSeenAt   DateTime @default(now())
+
+  @@index([lastSeenAt])
   @@index([operatorId])
 }

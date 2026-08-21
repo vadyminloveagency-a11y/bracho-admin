@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 import { readSession } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
 
+const NAV = [
+  { href: "/admin/account-manager", label: "Account Manager" },
+];
+
 export default async function AdminLayout({
   children,
 }: {
@@ -12,46 +16,69 @@ export default async function AdminLayout({
   if (!session || session.role !== "DIRECTOR") redirect("/login");
 
   return (
-    <div style={{ minHeight: "100vh" }}>
-      <header
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        gridTemplateColumns: "220px 1fr",
+        background: "#141210",
+      }}
+    >
+      <aside
         style={{
+          borderRight: "1px solid rgba(255, 43, 58, 0.28)",
+          background: "#0d0a0b",
+          padding: "20px 14px",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          padding: "18px 28px",
-          borderBottom: "1px solid var(--line)",
-          background: "rgba(28,28,28,0.92)",
-          backdropFilter: "blur(8px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
+          flexDirection: "column",
+          gap: 18,
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 20 }}>
+        <div>
           <Link
-            href="/admin"
+            href="/admin/account-manager"
             style={{
               fontFamily: "var(--font-display), Georgia, serif",
-              fontSize: 28,
+              fontSize: 26,
               letterSpacing: "0.04em",
+              color: "#f8fbff",
             }}
           >
             Bracho
           </Link>
-          <nav style={{ display: "flex", gap: 14, fontSize: 14, color: "var(--muted)" }}>
-            <Link href="/admin">Overview</Link>
-            <Link href="/admin/operators">Operators</Link>
-          </nav>
+          <p style={{ margin: "6px 0 0", color: "#98a1aa", fontSize: 12 }}>
+            Director
+          </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 14 }}>
-          <span style={{ color: "var(--muted)" }}>{session.name}</span>
+
+        <nav style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+          {NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                display: "block",
+                padding: "10px 12px",
+                borderRadius: 8,
+                border: "1px solid rgba(255, 43, 58, 0.45)",
+                background: "rgba(255, 43, 58, 0.12)",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <span style={{ color: "#98a1aa", fontSize: 13 }}>{session.name}</span>
           <LogoutButton />
         </div>
-      </header>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 48px" }}>
-        {children}
-      </div>
+      </aside>
+
+      <div style={{ minWidth: 0, minHeight: "100vh" }}>{children}</div>
     </div>
   );
 }
